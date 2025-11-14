@@ -1,4 +1,4 @@
-# __main__.py - FINAL CLEAN VERSION
+# __main__.py - FIXED WITH MENU E REGISTRATION
 import os
 import sys
 import asyncio
@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from pyrogram import Client, filters
 
 # Import modules - PENTING: Import sebelum sys.path
-from modules import ata_menu, menu_H, menu_B, menu_C, menu_D, cekid
+from modules import ata_menu, menu_H, menu_B, menu_C, menu_D, menu_E, cekid  # ← TAMBAHKAN menu_E!
 
 # Import lucky wheel functions
 from modules.lucky_wheel_utils import (
@@ -41,12 +41,13 @@ app = Client("MainBot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 ata_menu.register_handlers(app, OWNER_ID)
 cekid.register_handlers(app)
 menu_H.register(app)
+menu_E.register_lucky_wheel_menu_E(app)  # ← TAMBAHKAN REGISTRASI MENU E!
 
 # ==========================================================
-# LUCKY WHEEL COMMAND HANDLERS
+# LUCKY WHEEL COMMAND HANDLERS (BOT COMMANDS)
 # ==========================================================
 
-# Command: /spin - Spin lucky wheel
+# Command: /spin - Spin lucky wheel (bot command)
 @app.on_message(filters.private & filters.command(["spin", "luckywheel"]))
 async def spin_lucky_wheel_command(client, message):
     user_id = message.from_user.id
@@ -127,7 +128,10 @@ async def restart_bot(client, message):
 async def help_command(client, message):
     help_text = (
         "❓ *HELP MENU*\n\n"
-        "🎰 **LUCKY WHEEL:**\n"
+        "🎰 **LUCKY WHEEL WEB (Menu E):**\n"
+        "• /E - Buka Lucky Wheel Online (lootdungeon.online)\n"
+        "• /menu_e - Alias untuk Lucky Wheel Web\n\n"
+        "🎮 **LUCKY WHEEL BOT:**\n"
         "• /spin - Spin lucky wheel (butuh 1 tiket)\n"
         "• /buyticket [jumlah] - Beli tiket (25 Fizz Coin)\n"
         "• /tiket - Lihat status tiket\n"
@@ -207,7 +211,9 @@ async def debug_message(client, message):
 # ==========================================================
 if __name__ == "__main__":
     print("🚀 Bot utama aktif dengan Lucky Wheel!")
-    print("🎰 Lucky Wheel Commands:")
+    print("🎰 Lucky Wheel Web (Menu E):")
+    print("   /E - Lucky Wheel Online di lootdungeon.online")
+    print("🎮 Lucky Wheel Bot Commands:")
     print("   /spin - Spin lucky wheel")
     print("   /buyticket [jumlah] - Beli tiket")
     print("   /tiket - Lihat status")
