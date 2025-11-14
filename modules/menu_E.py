@@ -27,7 +27,7 @@ def register_lucky_wheel_menu_E(app: Client):
 
         keyboard = InlineKeyboardMarkup([
             [InlineKeyboardButton("🎰 BUKA WEBSITE", url="https://lootdungeon.online")],
-            [InlineKeyboardButton("📊 STATISTIK", callback_data=f"E_STATS_{user_id}")],
+            [InlineKeyboardButton("📊 STATISTIK", callback_data="E_STATS")],
             [InlineKeyboardButton("⬅️ KEMBALI", callback_data="E_BACK")]
         ])
 
