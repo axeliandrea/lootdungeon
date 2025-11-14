@@ -94,7 +94,7 @@ body {
         0 0 50px rgba(255, 215, 0, 0.6),
         inset 0 0 50px rgba(255, 215, 0, 0.1);
     overflow: hidden;
-    transition: transform 3s cubic-bezier(0.17, 0.67, 0.12, 0.99);
+    transform: rotate(0deg);
 }
 
 /* Wheel Segments */
@@ -406,12 +406,41 @@ body {
         transform: rotate(0deg);
     }
     to {
-        transform: rotate(var(--spin-degrees));
+        transform: rotate(var(--spin-degrees, 720deg));
     }
 }
 
 .spinning {
-    animation: spin 3s cubic-bezier(0.17, 0.67, 0.12, 0.99) forwards;
+    animation: spin 3s cubic-bezier(0.17, 0.67, 0.12, 0.99);
+}
+
+/* Visual feedback when spinning */
+.spinning::before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: -10px;
+    right: -10px;
+    bottom: -10px;
+    border: 3px solid rgba(255, 215, 0, 0.5);
+    border-radius: 50%;
+    animation: spinRing 0.5s linear infinite;
+    z-index: -1;
+}
+
+/* Ensure wheel segments don't interfere with spinning */
+.segment {
+    will-change: transform;
+}
+
+/* Spinning ring animation */
+@keyframes spinRing {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 /* Responsive Design */
