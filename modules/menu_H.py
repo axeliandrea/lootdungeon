@@ -3,7 +3,7 @@ from pyrogram import types, filters
 import json, os
 
 # === Lokasi database achievement ===
-ACHIEVEMENT_DB = "ATA/data/achievement_db.json"
+ACHIEVEMENT_DB = "data/achievement_db.json"
 
 
 # === Fungsi utilitas database ===
