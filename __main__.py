@@ -31,7 +31,7 @@ app = Client("MainBot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 ata_menu.register_handlers(app, OWNER_ID)
 cekid.register_handlers(app)
 menu_H.register(app)
-menu_E.register_lucky_wheel_menu_E(app)
+menu_E.register_lucky_wheel_menu_E(app)  # Menu E sudah menangani semua /E & /menu_e
 
 # ==========================================================
 # COMMAND /restart (OWNER only)
@@ -82,4 +82,3 @@ if __name__ == "__main__":
     print("   /help → Tampilkan menu bantuan")
 
     app.run()
-
