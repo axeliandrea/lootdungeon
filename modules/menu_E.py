@@ -9,25 +9,25 @@ def register_lucky_wheel_menu_E(app: Client):
     # FUNCTION untuk menampilkan menu E
     # =====================================
     async def send_menu_e(input_obj):
-        # Tentukan method yang tepat
-        if hasattr(input_obj, "message") and hasattr(input_obj.message, "edit_text"):
-            # CallbackQuery
+        if isinstance(input_obj, pyrogram.types.CallbackQuery):
             send_func = input_obj.message.edit_text
         else:
-            # Message
             send_func = input_obj.reply_text
-
+    
         text = (
             "🎰 **LUCKY WHEEL — MENU E** 🎰\n"
             "Selamat datang di Lucky Wheel Online!\n"
             "Tekan tombol di bawah untuk membuka submenu."
         )
-
+    
         keyboard = InlineKeyboardMarkup([
             [InlineKeyboardButton("🎰 BUKA WEBSITE", url="https://lootdungeon.online")],
             [InlineKeyboardButton("📊 STATISTIK", callback_data="E_STATS")],
             [InlineKeyboardButton("⬅️ KEMBALI", callback_data="E_BACK")]
         ])
+
+    await send_func(text, reply_markup=keyboard)
+
 
         await send_func(text, reply_markup=keyboard)
 
