@@ -1,6 +1,7 @@
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from modules.lucky_wheel_utils import lucky_wheel_manager
+import pyrogram  # jangan lupa import pyrogram karena dipakai isinstance
 
 def register_lucky_wheel_menu_E(app: Client):
     print("🔗 [DEBUG] Menu E registered...")
@@ -13,23 +14,20 @@ def register_lucky_wheel_menu_E(app: Client):
             send_func = input_obj.message.edit_text
         else:
             send_func = input_obj.reply_text
-    
+
         text = (
             "🎰 **LUCKY WHEEL — MENU E** 🎰\n"
             "Selamat datang di Lucky Wheel Online!\n"
             "Tekan tombol di bawah untuk membuka submenu."
         )
-    
+
         keyboard = InlineKeyboardMarkup([
             [InlineKeyboardButton("🎰 BUKA WEBSITE", url="https://lootdungeon.online")],
             [InlineKeyboardButton("📊 STATISTIK", callback_data="E_STATS")],
             [InlineKeyboardButton("⬅️ KEMBALI", callback_data="E_BACK")]
         ])
 
-    await send_func(text, reply_markup=keyboard)
-
-
-        await send_func(text, reply_markup=keyboard)
+        await send_func(text, reply_markup=keyboard)  # <-- HARUS di dalam fungsi
 
     # =====================================
     # COMMAND /E dan /menu_e
