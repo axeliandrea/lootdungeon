@@ -5,7 +5,14 @@ import asyncio
 from dotenv import load_dotenv
 from pyrogram import Client, filters
 from modules import ata_menu, menu_H, menu_B, menu_C, menu_D, cekid
-
+# Import lucky wheel functions
+from modules.lucky_wheel_utils import (
+    lucky_wheel_manager,
+    spin_lucky_wheel,
+    buy_lucky_wheel_ticket,
+    get_user_lucky_wheel_status
+)
+sys.path.append(os.path.join(os.path.dirname(__file__), 'modules'))
 # ==========================================================
 # LOAD ENV
 # ==========================================================
@@ -72,5 +79,6 @@ if __name__ == "__main__":
     print("🚀 Bot utama aktif!")
 
     app.run()
+
 
 
