@@ -69,7 +69,7 @@ async def spin_lucky_wheel_command(client, message):
         if "JACKPOT" in prize.name:
             result_text += f"\n\n🎉🎉🎉 **JACKPOT! JACKPOT! JACKPOT!** 🎉🎉🎉\n🎊 Congratulations! Anda mendapatkan jackpot terbesar! 🎊"
         
-        await message.reply_text(result_text, parse_mode='Markdown')
+        await message.reply_text(result_text)
     else:
         await message.reply_text(spin_message)
 
@@ -220,3 +220,4 @@ if __name__ == "__main__":
     print("   /prizes - Lihat hadiah")
 
     app.run()
+
