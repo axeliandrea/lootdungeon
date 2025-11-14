@@ -1,9 +1,3 @@
-# modules/menu_E.py
-"""
-Menu E - Lucky Wheel Web + Lucky Wheel System Integration
-Gabungan antara menu tombol dan utilitas lucky wheel.
-"""
-
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from modules.lucky_wheel_utils import lucky_wheel_manager
@@ -14,13 +8,14 @@ def register_lucky_wheel_menu_E(app: Client):
     # =====================================
     # FUNCTION untuk menampilkan menu E
     # =====================================
-    async def send_menu_e(message_or_callback):
-        if hasattr(message_or_callback, "from_user"):
-            user_id = message_or_callback.from_user.id
-            send_func = message_or_callback.reply_text
+    async def send_menu_e(input_obj):
+        # Tentukan method yang tepat
+        if hasattr(input_obj, "message") and hasattr(input_obj.message, "edit_text"):
+            # CallbackQuery
+            send_func = input_obj.message.edit_text
         else:
-            user_id = message_or_callback.from_user.id
-            send_func = message_or_callback.message.edit_text
+            # Message
+            send_func = input_obj.reply_text
 
         text = (
             "🎰 **LUCKY WHEEL — MENU E** 🎰\n"
