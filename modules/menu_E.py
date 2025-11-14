@@ -1,86 +1,65 @@
-# Menu E - Lucky Wheel Integration untuk Web
+# Menu E - Lucky Wheel Web (SUPER FIXED VERSION)
 from pyrogram import Client, filters
-from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 
 def register_lucky_wheel_menu_E(app: Client):
-    """Register Menu E - Lucky Wheel Web"""
+    print("🔗 Menu E registered...")  # DEBUG
 
-    # ================================
-    # COMMAND /E dan /menu_e
-    # ================================
+    # =====================================
+    # COMMAND: /E dan /menu_e
+    # =====================================
     @app.on_message(filters.private & filters.command(["E", "menu_e"]))
-    async def lucky_wheel_menu_E(client, message):
+    async def open_menu_e(client, message):
+        print("📨 /E command triggered")  # DEBUG
 
-        lucky_wheel_text = """
-🎰 **LUCKY WHEEL MENU E** 🎰
+        text = """
+🎰 **LUCKY WHEEL — MENU E** 🎰
 
 Selamat datang di Lucky Wheel Online!
-
-🌐 *Website Lucky Wheel:*
-👉 https://lootdungeon.online
-
-Fitur:
-• Animasi spin ultra smooth
-• Fair prize system
-• Weekly bonus event
-• Leaderboard
-
-Klik tombol di bawah untuk membuka website!
+Tekan tombol di bawah untuk membuka submenu.
         """
 
         keyboard = InlineKeyboardMarkup([
-            [InlineKeyboardButton("🎰 BUKA LUCKY WHEEL ONLINE", url="https://lootdungeon.online")],
-            [InlineKeyboardButton("📊 STATISTIK LUCKY WHEEL", callback_data="luckywheel_stats")],
-            [InlineKeyboardButton("⬅️ KEMBALI", callback_data="back_menu")]
+            [InlineKeyboardButton("🎰 BUKA WEBSITE", url="https://lootdungeon.online")],
+            [InlineKeyboardButton("📊 STATISTIK", callback_data="E_STATS")],
+            [InlineKeyboardButton("⬅️ KEMBALI", callback_data="E_BACK")]
         ])
 
-        await message.reply_text(
-            lucky_wheel_text,
-            parse_mode='Markdown',
-            reply_markup=keyboard
-        )
+        await message.reply_text(text, reply_markup=keyboard, parse_mode="Markdown")
 
-    # ================================
-    # CALLBACK: luckywheel_stats
-    # ================================
-    @app.on_callback_query(filters.regex("luckywheel_stats"))
-    async def luckywheel_stats(client, callback_query):
+    # =====================================
+    # CALLBACK: STATISTIK
+    # =====================================
+    @app.on_callback_query(filters.regex("^E_STATS$"), group=-1)
+    async def show_stats(client, callback_query):
+        print("📌 CALLBACK: E_STATS")  # DEBUG
 
         stats_text = """
-📊 **LUCKY WHEEL STATS**
+📊 **STATISTIK LUCKY WHEEL**
 
-🎉 Jackpot hari ini: *3 kali*
-💰 Total hadiah keluar: *12.450 coin*
-🎟️ Tiket tersisa rata-rata: *58 tiket/user*
+🎉 Jackpot hari ini: 3
+💰 Total hadiah keluar: 12.450 coin
+🎟️ Rata-rata tiket user: 58
 
 Klik tombol untuk main.
         """
 
         keyboard = InlineKeyboardMarkup([
             [InlineKeyboardButton("🎰 MAIN SEKARANG", url="https://lootdungeon.online")],
-            [InlineKeyboardButton("⬅️ KEMBALI", callback_data="back_menu")]
+            [InlineKeyboardButton("⬅️ KEMBALI", callback_data="E_BACK")]
         ])
 
-        await callback_query.edit_message_text(
-            stats_text,
-            parse_mode='Markdown',
-            reply_markup=keyboard
-        )
+        await callback_query.edit_message_text(stats_text, reply_markup=keyboard, parse_mode="Markdown")
 
-    # ================================
-    # CALLBACK: back_menu
-    # ================================
-    @app.on_callback_query(filters.regex("back_menu"))
-    async def back_to_main_menu(client, callback_query):
-
-        await callback_query.answer("Kembali ke menu utama...")
+    # =====================================
+    # CALLBACK: BACK
+    # =====================================
+    @app.on_callback_query(filters.regex("^E_BACK$"), group=-1)
+    async def go_back(client, callback_query):
+        print("📌 CALLBACK: E_BACK")  # DEBUG
 
         await callback_query.edit_message_text(
-            "⬅️ *Kembali ke menu utama*\n\n"
-            "Silakan gunakan /activate untuk membuka tombol menu.",
+            "⬅️ Kembali ke menu utama.\nGunakan /activate untuk membuka tombol utama.",
             parse_mode="Markdown"
         )
-
-
-__all__ = ["register_lucky_wheel_menu_E"]
