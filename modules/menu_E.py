@@ -1,7 +1,6 @@
 # Menu E - Lucky Wheel Web (COMPLETELY FIXED VERSION)
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-from pyrogram.enums import ParseMode  # ← TAMBAHAN PENTING!
 
 def register_lucky_wheel_menu_E(app: Client):
     print("🔗 Menu E registered...") # DEBUG
