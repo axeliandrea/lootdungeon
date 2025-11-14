@@ -4,7 +4,6 @@ import sys
 import asyncio
 from dotenv import load_dotenv
 from pyrogram import Client, filters
-from pyrogram.enums import ParseMode
 
 # Import modules - PENTING: Import sebelum sys.path
 from modules import ata_menu, menu_H, menu_B, menu_C, menu_D, menu_E, cekid  # ← TAMBAHKAN menu_E!
@@ -105,13 +104,13 @@ async def buy_ticket_command(client, message):
 async def my_tickets_command(client, message):
     user_id = message.from_user.id
     status = get_user_lucky_wheel_status(user_id)
-    await message.reply_text(status, parse_mode=ParseMode.MARKDOWN)
+    await message.reply_text(status, parse_mode='Markdown')
 
 # Command: /prizes atau /hadiah - Lihat daftar hadiah
 @app.on_message(filters.private & filters.command(["prizes", "hadiah"]))
 async def prizes_command(client, message):
     info = get_lucky_wheel_info()
-    await message.reply_text(info, parse_mode=ParseMode.MARKDOWN)
+    await message.reply_text(info, parse_mode='Markdown')
 
 # ==========================================================
 # COMMAND /restart (OWNER only)
@@ -143,7 +142,7 @@ async def help_command(client, message):
         "• /getid → Cek User ID, Chat ID, atau Channel ID\n"
         "• /activate → Tampilkan menu tombol REGISTER / MENU B–I"
     )
-    await message.reply_text(help_text, parse_mode=ParseMode.MARKDOWN)
+    await message.reply_text(help_text, parse_mode='Markdown')
 
 # ==========================================================
 # ADMIN FUNCTIONS (OWNER ONLY)
