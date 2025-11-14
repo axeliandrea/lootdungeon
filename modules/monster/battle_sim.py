@@ -9,7 +9,7 @@ from modules.bag_utils import load_bag, save_bag
 from modules.monster import floor1  # floor1 import langsung
 
 # =================== Achievement DB ===================
-ACHIEVEMENT_DB = "ATA/data/achievement_db.json"
+ACHIEVEMENT_DB = "data/achievement_db.json"
 
 def load_achievement_db():
     if not os.path.exists(ACHIEVEMENT_DB):
