@@ -65,9 +65,11 @@ class LuckyWheel {
     
     spin() {
         if (this.isSpinning || this.currentSpins <= 0) {
+            console.log('Cannot spin: spinning=', this.isSpinning, 'spins left=', this.currentSpins);
             return;
         }
         
+        console.log('Starting spin...');
         this.isSpinning = true;
         this.spinButton.disabled = true;
         this.spinButton.textContent = 'BERPUTAR...';
@@ -77,17 +79,28 @@ class LuckyWheel {
         const segmentAngle = 360 / this.rewards.length;
         const winningSegmentIndex = Math.floor((randomRotation % 360) / segmentAngle);
         
-        // Apply rotation
-        this.wheel.style.transform = `rotate(${randomRotation}deg)`;
+        console.log('Random rotation:', randomRotation, 'Winning segment:', winningSegmentIndex);
         
-        // Add spinning class
+        // Set CSS custom property for animation
+        this.wheel.style.setProperty('--spin-degrees', `${randomRotation}deg`);
+        
+        // Fallback for older browsers: use inline transform
+        if (!CSS.supports('transform', `rotate(${randomRotation}deg)`)) {
+            this.wheel.style.transform = `rotate(${randomRotation}deg)`;
+        }
+        
+        // Add spinning class to trigger animation
         this.wheel.classList.add('spinning');
+        
+        console.log('Animation started, spinning class added');
         
         // Calculate result after animation
         setTimeout(() => {
+            console.log('Animation completed');
             this.processResult(winningSegmentIndex);
             this.isSpinning = false;
             this.wheel.classList.remove('spinning');
+            this.wheel.style.transform = 'rotate(0deg)'; // Reset rotation
             this.spinButton.disabled = false;
             this.spinButton.innerHTML = '<span>PUTAR</span>';
         }, 3000);
