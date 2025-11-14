@@ -6,18 +6,21 @@ Gabungan antara menu tombol dan utilitas lucky wheel.
 
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-from modules.lucky_wheel_utils import lucky_wheel_manager, get_user_lucky_wheel_status
+from modules.lucky_wheel_utils import lucky_wheel_manager
 
 def register_lucky_wheel_menu_E(app: Client):
     print("🔗 [DEBUG] Menu E registered...")
 
     # =====================================
-    # COMMAND /E dan /menu_e
+    # FUNCTION untuk menampilkan menu E
     # =====================================
-    @app.on_message(filters.private & filters.command(["E", "menu_e"]))
-    async def open_menu_e(client, message):
-        print("📨 [DEBUG] /E command triggered")
-        user_id = message.from_user.id
+    async def send_menu_e(message_or_callback):
+        if hasattr(message_or_callback, "from_user"):
+            user_id = message_or_callback.from_user.id
+            send_func = message_or_callback.reply_text
+        else:
+            user_id = message_or_callback.from_user.id
+            send_func = message_or_callback.message.edit_text
 
         text = (
             "🎰 **LUCKY WHEEL — MENU E** 🎰\n"
@@ -31,22 +34,30 @@ def register_lucky_wheel_menu_E(app: Client):
             [InlineKeyboardButton("⬅️ KEMBALI", callback_data="E_BACK")]
         ])
 
-        await message.reply_text(text, reply_markup=keyboard)
+        await send_func(text, reply_markup=keyboard)
+
+    # =====================================
+    # COMMAND /E dan /menu_e
+    # =====================================
+    @app.on_message(filters.private & filters.command(["E", "menu_e"]))
+    async def open_menu_e(client, message):
+        print("📨 [DEBUG] /E command triggered")
+        await send_menu_e(message)
         print("✅ [DEBUG] Menu E displayed successfully")
 
     # =====================================
     # CALLBACK: STATISTIK
     # =====================================
-    @app.on_callback_query(filters.regex(r"^E_STATS_\d+$"), group=-1)
+    @app.on_callback_query(filters.regex(r"^E_STATS$"), group=-1)
     async def show_stats(client, callback_query):
-        print("📌 [DEBUG] CALLBACK: E_STATS triggered")
-        user_id = int(callback_query.data.split("_")[2])
+        user_id = callback_query.from_user.id
+        print(f"📌 [DEBUG] CALLBACK: E_STATS triggered for user {user_id}")
 
         stats_text = f"""
 📊 **STATISTIK LUCKY WHEEL**
 🎫 Tiket Anda: {lucky_wheel_manager.get_user_tickets(user_id)}
 💰 Fizz Coin: {lucky_wheel_manager.user_data.get(str(user_id), {}).get('balance',0)}
-✅ Siap Spin! Gunakan /spin untuk memutar lucky wheel.
+✅ Siap Spin! Tekan tombol di bawah untuk memutar Lucky Wheel.
         """
 
         keyboard = InlineKeyboardMarkup([
@@ -59,26 +70,7 @@ def register_lucky_wheel_menu_E(app: Client):
         print("✅ [DEBUG] Statistik berhasil ditampilkan")
 
     # =====================================
-    # CALLBACK: BACK ke menu utama
-    # =====================================
-    @app.on_callback_query(filters.regex("^E_BACK$"), group=-1)
-    async def go_back(client, callback_query):
-        print("📌 [DEBUG] CALLBACK: E_BACK triggered")
-
-        back_text = "⬅️ Kamu kembali ke menu utama.\nSilahkan pilih menu:"
-        main_menu_keyboard = InlineKeyboardMarkup([
-            [InlineKeyboardButton("🧙‍♂️ My Hero", callback_data="MENU_B")],
-            [InlineKeyboardButton("⚔️ Battle", callback_data="MENU_C")],
-            [InlineKeyboardButton("🎒 Inventory", callback_data="MENU_D")],
-            [InlineKeyboardButton("🎰 Lucky Wheel", callback_data="OPEN_E")]
-        ])
-
-        await callback_query.answer()
-        await callback_query.message.edit_text(back_text, reply_markup=main_menu_keyboard)
-        print("🔙 [DEBUG] User kembali ke menu utama (FULL MENU)")
-
-    # =====================================
-    # CALLBACK: SPIN NOW dari tombol statistik
+    # CALLBACK: SPIN NOW
     # =====================================
     @app.on_callback_query(filters.regex("^SPIN_NOW$"), group=-1)
     async def spin_now(client, callback_query):
@@ -97,6 +89,35 @@ def register_lucky_wheel_menu_E(app: Client):
                 result_text += f"\n\n🎉🎉🎉 **JACKPOT!** 🎉🎉🎉\n🎊 Selamat! Anda mendapatkan jackpot terbesar! 🎊"
             await callback_query.message.edit_text(result_text)
             await callback_query.answer()
-            print(f"✅ [DEBUG] User {user_id} mendapatkan hadiah: {prize.name}")
+            print(f"✅ User {user_id} mendapatkan hadiah: {prize.name}")
         else:
             await callback_query.answer(spin_message, show_alert=True)
+
+    # =====================================
+    # CALLBACK: BACK ke menu utama
+    # =====================================
+    @app.on_callback_query(filters.regex("^E_BACK$"), group=-1)
+    async def go_back(client, callback_query):
+        print("📌 [DEBUG] CALLBACK: E_BACK triggered")
+
+        back_text = "⬅️ Kamu kembali ke menu utama.\nSilahkan pilih menu:"
+        main_menu_keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton("🧙‍♂️ My Hero", callback_data="MENU_B")],
+            [InlineKeyboardButton("⚔️ Battle", callback_data="MENU_C")],
+            [InlineKeyboardButton("🎒 Inventory", callback_data="MENU_D")],
+            [InlineKeyboardButton("🎰 Lucky Wheel", callback_data="OPEN_E")]
+        ])
+
+        await callback_query.answer()
+        await callback_query.message.edit_text(back_text, reply_markup=main_menu_keyboard)
+        print("🔙 [DEBUG] User kembali ke menu utama")
+
+    # =====================================
+    # CALLBACK: OPEN_E (dari tombol main menu)
+    # =====================================
+    @app.on_callback_query(filters.regex("^OPEN_E$"), group=-1)
+    async def open_menu_e_callback(client, callback_query):
+        print("📨 [DEBUG] OPEN_E callback triggered")
+        await callback_query.answer()
+        await send_menu_e(callback_query)
+        print("✅ [DEBUG] Menu E ditampilkan ulang via OPEN_E")
