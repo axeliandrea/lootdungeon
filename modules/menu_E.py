@@ -22,7 +22,7 @@ def register_lucky_wheel_menu_E(app: Client):
             [InlineKeyboardButton("📊 STATISTIK", callback_data="E_STATS")],
             [InlineKeyboardButton("⬅️ KEMBALI", callback_data="E_BACK")]
         ])
-        await message.reply_text(text, reply_markup=keyboard, parse_mode=ParseMode.MARKDOWN)  # ← PERBAIKAN DISINI!
+        await message.reply_text(result_text) 
 
     # =====================================
     # CALLBACK: STATISTIK
@@ -41,7 +41,7 @@ def register_lucky_wheel_menu_E(app: Client):
             [InlineKeyboardButton("🎰 MAIN SEKARANG", url="https://lootdungeon.online")],
             [InlineKeyboardButton("⬅️ KEMBALI", callback_data="E_BACK")]
         ])
-        await callback_query.edit_message_text(stats_text, reply_markup=keyboard, parse_mode=ParseMode.MARKDOWN)  # ← PERBAIKAN DISINI!
+        await message.reply_text(result_text)
 
     # =====================================
     # CALLBACK: BACK
@@ -51,5 +51,5 @@ def register_lucky_wheel_menu_E(app: Client):
         print("📌 CALLBACK: E_BACK") # DEBUG
         await callback_query.edit_message_text(
             "⬅️ Kembali ke menu utama.\nGunakan /activate untuk membuka tombol utama.",
-            parse_mode=ParseMode.MARKDOWN  # ← PERBAIKAN DISINI!
+            await message.reply_text(result_text)
         )
