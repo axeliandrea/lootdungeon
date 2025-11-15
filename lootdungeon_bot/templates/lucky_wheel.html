@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lucky Wheel - LootDungeon</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 600px;
+            width: 100%;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        
+        .wheel-container {
+            position: relative;
+            margin: 30px auto;
+            width: 300px;
+            height: 300px;
+        }
+        
+        .wheel {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 8px solid #333;
+            position: relative;
+            overflow: hidden;
+            transition: transform 4s cubic-bezier(0.23, 1, 0.32, 1);
+            background: conic-gradient(
+                #ff6b6b 0deg 72deg,
+                #4ecdc4 72deg 144deg,
+                #45b7d1 144deg 216deg,
+                #96ceb4 216deg 288deg,
+                #ffd93d 288deg 360deg
+            );
+        }
+        
+        .wheel::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px;
+            height: 20px;
+            background: #333;
+            border-radius: 50%;
+            z-index: 10;
+        }
+        
+        .pointer {
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-bottom: 20px solid #e74c3c;
+            z-index: 5;
+        }
+        
+        .spin-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2em;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 20px 0;
+        }
+        
+        .spin-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        
+        .spin-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 10px;
+            font-size: 1.2em;
+            font-weight: bold;
+            display: none;
+        }
+        
+        .result.show {
+            display: block;
+            animation: slideIn 0.5s ease-out;
+        }
+        
+        .result.win {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+        
+        .result.lose {
+            background: linear-gradient(135deg, #fc466b 0%, #3f5efb 100%);
+            color: white;
+        }
+        
+        .player-info {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        
+        .player-stat {
+            text-align: center;
+        }
+        
+        .player-stat .label {
+            font-size: 0.9em;
+            color: #666;
+        }
+        
+        .player-stat .value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .prize-labels {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+        }
+        
+        .prize-label {
+            position: absolute;
+            font-size: 14px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes bounce {
+            0%, 20%, 60%, 100% {
+                transform: translateY(0);
+            }
+            40% {
+                transform: translateY(-10px);
+            }
+            80% {
+                transform: translateY(-5px);
+            }
+        }
+        
+        .loading {
+            display: none;
+            margin: 20px 0;
+        }
+        
+        .loading.show {
+            display: block;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎰 Lucky Wheel</h1>
+        <p class="subtitle">Spin the wheel and win amazing prizes!</p>
+        
+        <div class="player-info">
+            <div class="player-stat">
+                <div class="label">🎫 Tickets</div>
+                <div class="value" id="tickets">-</div>
+            </div>
+            <div class="player-stat">
+                <div class="label">💰 Coins</div>
+                <div class="value" id="coins">-</div>
+            </div>
+        </div>
+        
+        <div class="wheel-container">
+            <div class="pointer"></div>
+            <div class="wheel" id="wheel">
+                <div class="prize-labels">
+                    <div class="prize-label" style="top: 30px; left: 50%; transform: translateX(-50%);">💰</div>
+                    <div class="prize-label" style="top: 50%; right: 30px; transform: translateY(-50%);">🎫</div>
+                    <div class="prize-label" style="bottom: 30px; left: 50%; transform: translateX(-50%);">🧪</div>
+                    <div class="prize-label" style="top: 50%; left: 30px; transform: translateY(-50%);">☠️</div>
+                </div>
+            </div>
+        </div>
+        
+        <button class="spin-button" id="spinButton" onclick="spinWheel()">
+            SPIN THE WHEEL! 🎲
+        </button>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Spinning the wheel...</p>
+        </div>
+        
+        <div class="result" id="result"></div>
+        
+        <div style="margin-top: 30px; font-size: 0.9em; color: #666;">
+            <p>💰 Fizz Coin 100 (5%) | 🎫 Lucky Ticket 3pcs (90%)</p>
+            <p>🧪 Potion HP 50 3pcs (4%) | ☠️ Zonk (1%)</p>
+        </div>
+    </div>
+
+    <script>
+        // Get user_id from URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const userId = urlParams.get('user_id');
+        
+        let isSpinning = false;
+        let currentRotation = 0;
+        
+        // Load player info when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!userId) {
+                alert('No user ID provided. Please access this page from the Telegram bot.');
+                return;
+            }
+            loadPlayerInfo();
+        });
+        
+        async function loadPlayerInfo() {
+            try {
+                const response = await fetch(`/api/player/${userId}`);
+                const data = await response.json();
+                
+                if (data.player) {
+                    document.getElementById('tickets').textContent = data.player.tickets;
+                    document.getElementById('coins').textContent = data.player.coins;
+                }
+            } catch (error) {
+                console.error('Error loading player info:', error);
+            }
+        }
+        
+        async function spinWheel() {
+            if (isSpinning) return;
+            
+            isSpinning = true;
+            const spinButton = document.getElementById('spinButton');
+            const loading = document.getElementById('loading');
+            const result = document.getElementById('result');
+            
+            // Disable button and show loading
+            spinButton.disabled = true;
+            loading.classList.add('show');
+            result.classList.remove('show');
+            
+            try {
+                // Spin animation
+                const wheel = document.getElementById('wheel');
+                const spins = 5 + Math.random() * 5; // 5-10 full rotations
+                const finalRotation = currentRotation + (spins * 360);
+                
+                wheel.style.transform = `rotate(${finalRotation}deg)`;
+                currentRotation = finalRotation % 360;
+                
+                // Wait for spin animation to complete
+                setTimeout(async () => {
+                    try {
+                        // Call API to get actual prize
+                        const response = await fetch(`/api/spin?user_id=${userId}`);
+                        const data = await response.json();
+                        
+                        if (data.success) {
+                            // Show result
+                            const isWin = data.prize.type !== 'zonk';
+                            result.className = `result show ${isWin ? 'win' : 'lose'}`;
+                            
+                            if (isWin) {
+                                result.innerHTML = `
+                                    🎉 <strong>Congratulations!</strong> 🎉<br>
+                                    You won: ${data.prize.emoji} ${data.prize.name} x${data.prize.quantity}
+                                `;
+                            } else {
+                                result.innerHTML = `
+                                    ☠️ <strong>Better luck next time!</strong><br>
+                                    You got Zonk! Try again!
+                                `;
+                            }
+                            
+                            // Update player info
+                            document.getElementById('tickets').textContent = data.player_tickets;
+                            document.getElementById('coins').textContent = data.player_coins;
+                            
+                            // Bounce animation for win
+                            if (isWin) {
+                                result.style.animation = 'bounce 1s ease-in-out';
+                            }
+                            
+                        } else {
+                            result.className = 'result show lose';
+                            result.innerHTML = `❌ Error: ${data.error}`;
+                        }
+                    } catch (error) {
+                        result.className = 'result show lose';
+                        result.innerHTML = `❌ Network error: ${error.message}`;
+                    } finally {
+                        // Re-enable button and hide loading
+                        spinButton.disabled = false;
+                        loading.classList.remove('show');
+                        isSpinning = false;
+                    }
+                }, 4000); // Match CSS transition duration
+                
+            } catch (error) {
+                console.error('Spin error:', error);
+                result.className = 'result show lose';
+                result.innerHTML = `❌ Error: ${error.message}`;
+                
+                // Re-enable button
+                spinButton.disabled = false;
+                loading.classList.remove('show');
+                isSpinning = false;
+            }
+        }
+    </script>
+</body>
+</html>
