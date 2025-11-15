@@ -202,7 +202,7 @@ class MiniAppHandler(BaseHTTPRequestHandler):
 def run_server(port=8080):
     """Run the web server"""
     try:
-        server_address = ('', port)
+        server_address = ('0.0.0.0', port)
         httpd = HTTPServer(server_address, MiniAppHandler)
         logger.info(f"Mini App server running on port {port}")
         logger.info(f"Access Lucky Wheel at: http://localhost:{port}/luckywheel.html")
