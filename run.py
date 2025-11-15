@@ -27,7 +27,7 @@ class LuckyWheelBot:
         """Check if port is available"""
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             try:
-                s.bind(('localhost', port))
+                s.bind(('0.0.0.0', port))
                 return True
             except OSError:
                 return False
