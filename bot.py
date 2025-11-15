@@ -21,7 +21,7 @@ GROUP_CHAT_ID = -1002917701297
 CHANNEL_ID = -1002502508906
 
 # URL untuk Mini App (akan diupdate setelah web server running)
-WEB_SERVER_URL = "https://lootdungeon.online/luckywheel.html"  # Akan diupdate otomatis
+WEB_SERVER_URL = "http://localhost:8081"  # Akan diupdate otomatis
 
 # Konfigurasi logging
 logging.basicConfig(
