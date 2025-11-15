@@ -2,134 +2,254 @@
 # -*- coding: utf-8 -*-
 
 """
-Lucky Wheel Telegram Bot dengan Mini App
-Main Runner Script
+Lucky Wheel Bot - Improved Runner dengan Error Handling
 """
 
 import os
 import sys
-import asyncio
-import threading
 import time
+import socket
 from subprocess import Popen, PIPE
-import signal
+import threading
+import logging
+
+# Setup logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 class LuckyWheelBot:
     def __init__(self):
-        self.bot_process = None
         self.web_server_process = None
+        self.bot_process = None
         self.running = False
+
+    def check_port(self, port):
+        """Check if port is available"""
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            try:
+                s.bind(('localhost', port))
+                return True
+            except OSError:
+                return False
+
+    def kill_process_on_port(self, port):
+        """Kill process using specific port"""
+        try:
+            # Try to find and kill process using the port
+            result = os.system(f"fuser -k {port}/tcp 2>/dev/null")
+            if result == 0:
+                logger.info(f"Killed process using port {port}")
+                time.sleep(2)  # Wait for process to fully close
+                return True
+            else:
+                # Alternative method using lsof if fuser not available
+                os.system(f"lsof -ti:{port} | xargs kill -9 2>/dev/null")
+                time.sleep(2)
+                return True
+        except Exception as e:
+            logger.warning(f"Could not kill process on port {port}: {e}")
+            return False
+
+    def find_free_port(self, start_port=8081):
+        """Find a free port starting from start_port"""
+        for port in range(start_port, start_port + 10):
+            if self.check_port(port):
+                return port
+        return None
+
+    def start_web_server(self):
+        """Start web server with better error handling"""
+        logger.info("🌐 Starting Web Server...")
+        
+        # Find available port
+        port = self.find_free_port()
+        if not port:
+            logger.error("❌ No available ports found!")
+            return False
+        
+        # Set environment variable for port
+        os.environ['MINI_APP_PORT'] = str(port)
+        
+        try:
+            # Kill any existing process on this port
+            self.kill_process_on_port(port)
+            
+            # Start web server
+            self.web_server_process = Popen([
+                sys.executable, '/workspace/web_server.py'
+            ], stdout=PIPE, stderr=PIPE, text=True)
+            
+            # Wait and check if started successfully
+            time.sleep(3)
+            
+            if self.web_server_process.poll() is None:
+                logger.info(f"✅ Web Server started successfully on port {port}")
+                logger.info(f"🌐 Mini App URL: http://localhost:{port}/luckywheel.html")
+                return True
+            else:
+                error_output = self.web_server_process.stderr.read()
+                logger.error(f"❌ Web Server failed to start: {error_output}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"❌ Error starting web server: {e}")
+            return False
 
     def start_bot(self):
         """Start Telegram bot"""
+        logger.info("🤖 Starting Telegram Bot...")
+        
         try:
-            print("🤖 Starting Telegram Bot...")
-            self.bot_process = Popen([sys.executable, '/workspace/bot.py'], 
-                                   stdout=PIPE, stderr=PIPE, text=True)
-            time.sleep(2)  # Give bot time to start
+            # Update environment variables
+            if 'MINI_APP_PORT' in os.environ:
+                port = os.environ['MINI_APP_PORT']
+                os.environ['WEB_SERVER_URL'] = f"http://localhost:{port}"
+            
+            self.bot_process = Popen([
+                sys.executable, '/workspace/bot.py'
+            ], stdout=PIPE, stderr=PIPE, text=True)
+            
+            time.sleep(3)
+            
             if self.bot_process.poll() is None:
-                print("✅ Bot started successfully!")
+                logger.info("✅ Bot started successfully!")
                 return True
             else:
-                print("❌ Bot failed to start")
+                error_output = self.bot_process.stderr.read()
+                logger.error(f"❌ Bot failed to start: {error_output}")
                 return False
+                
         except Exception as e:
-            print(f"❌ Error starting bot: {e}")
+            logger.error(f"❌ Error starting bot: {e}")
             return False
 
-    def start_web_server(self):
-        """Start web server for Mini App"""
+    def test_web_server(self, port):
+        """Test if web server is responding"""
         try:
-            print("🌐 Starting Web Server...")
-            self.web_server_process = Popen([sys.executable, '/workspace/web_server.py'], 
-                                          stdout=PIPE, stderr=PIPE, text=True)
-            time.sleep(2)  # Give server time to start
-            if self.web_server_process.poll() is None:
-                print("✅ Web Server started successfully!")
+            import requests
+            response = requests.get(f"http://localhost:{port}/luckywheel.html", timeout=5)
+            if response.status_code == 200 and "Lucky Wheel" in response.text:
+                logger.info("✅ Web Server test passed")
                 return True
             else:
-                print("❌ Web Server failed to start")
+                logger.warning("⚠️ Web Server responding but content mismatch")
                 return False
         except Exception as e:
-            print(f"❌ Error starting web server: {e}")
+            logger.error(f"❌ Web Server test failed: {e}")
             return False
 
     def start_all(self):
-        """Start both bot and web server"""
-        print("🎡 Lucky Wheel Bot dengan Mini App")
+        """Start both services with comprehensive error handling"""
+        print("🎡 Lucky Wheel Bot - Enhanced Version")
         print("=" * 50)
         
-        # Start web server first
-        if not self.start_web_server():
-            print("❌ Failed to start web server. Exiting...")
+        # Check Python version
+        python_version = sys.version_info
+        if python_version.major < 3 or (python_version.major == 3 and python_version.minor < 7):
+            logger.error("❌ Python 3.7+ required")
             return False
+        
+        logger.info(f"✅ Python {python_version.major}.{python_version.minor}.{python_version.micro}")
+        
+        # Check dependencies
+        try:
+            import telegram
+            import requests
+            logger.info("✅ Dependencies OK")
+        except ImportError as e:
+            logger.error(f"❌ Missing dependency: {e}")
+            logger.info("💡 Install with: pip install python-telegram-bot==20.7 requests")
+            return False
+        
+        # Start web server
+        if not self.start_web_server():
+            logger.error("❌ Cannot proceed without web server")
+            return False
+        
+        # Get port for testing
+        port = int(os.environ.get('MINI_APP_PORT', 8081))
+        
+        # Test web server
+        if not self.test_web_server(port):
+            logger.warning("⚠️ Web server test failed, but continuing...")
         
         # Start bot
         if not self.start_bot():
-            print("❌ Failed to start bot. Exiting...")
+            logger.error("❌ Bot failed to start")
             return False
         
         self.running = True
+        
         print("\n🎉 Lucky Wheel Bot System Started!")
-        print("📱 Bot Token: 8533524958:AAEgMfl3NS9SzTMCOpy1YpJMGQfNzKcdvv8")
-        print("👤 Owner ID: 6395738130")
-        print("👥 Group Chat: -1002917701297")
-        print("📢 Channel: -1002502508906")
-        print("\n💡 Ready to receive commands!")
-        print("\n📋 Commands yang tersedia:")
-        print("   /start - Aktivasi bot")
-        print("   /menu - Buka menu game")
-        print("\n🔄 Monitoring processes... (Ctrl+C to stop)")
+        print("=" * 50)
+        print(f"🤖 Bot Token: 8533524958:AAEgMfl3NS9SzTMCOpy1YpJMGQfNzKcdvv8")
+        print(f"👤 Owner ID: 6395738130")
+        print(f"🌐 Web Server: http://localhost:{port}")
+        print(f"🎡 Lucky Wheel: http://localhost:{port}/luckywheel.html")
+        print("\n📱 Test di Telegram:")
+        print("   1. Cari bot: @LuckyWheelRouletteBot")
+        print("   2. Kirim: /start")
+        print("   3. Kirim: /menu")
+        print("\n🛑 Press Ctrl+C to stop")
         print("=" * 50)
         
         return True
 
     def stop_all(self):
-        """Stop all processes"""
-        print("\n🛑 Shutting down Lucky Wheel Bot System...")
+        """Stop all processes gracefully"""
+        logger.info("\n🛑 Shutting down...")
         self.running = False
         
         if self.bot_process:
-            print("🛑 Stopping Telegram Bot...")
+            logger.info("🛑 Stopping Bot...")
             self.bot_process.terminate()
-            self.bot_process.wait(timeout=5)
+            try:
+                self.bot_process.wait(timeout=5)
+            except:
+                self.bot_process.kill()
         
         if self.web_server_process:
-            print("🛑 Stopping Web Server...")
+            logger.info("🛑 Stopping Web Server...")
             self.web_server_process.terminate()
-            self.web_server_process.wait(timeout=5)
+            try:
+                self.web_server_process.wait(timeout=5)
+            except:
+                self.web_server_process.kill()
         
-        print("✅ All processes stopped")
+        logger.info("✅ All services stopped")
 
     def monitor_processes(self):
         """Monitor and restart failed processes"""
         while self.running:
-            time.sleep(5)
+            time.sleep(10)
             
             # Check bot process
             if self.bot_process and self.bot_process.poll() is not None:
-                print("⚠️ Bot process died, restarting...")
+                logger.warning("⚠️ Bot process died, restarting...")
                 self.start_bot()
             
             # Check web server process
             if self.web_server_process and self.web_server_process.poll() is not None:
-                print("⚠️ Web Server process died, restarting...")
+                logger.warning("⚠️ Web Server process died, restarting...")
                 self.start_web_server()
 
-    def run(self):
-        """Main run function"""
-        try:
-            if self.start_all():
-                self.monitor_processes()
-        except KeyboardInterrupt:
-            print("\n🛑 Received interrupt signal...")
-        finally:
-            self.stop_all()
-
 def main():
-    """Main function"""
-    lucky_wheel = LuckyWheelBot()
-    lucky_wheel.run()
+    """Main function with enhanced error handling"""
+    bot = LuckyWheelBot()
+    
+    try:
+        if bot.start_all():
+            bot.monitor_processes()
+        else:
+            print("❌ Failed to start Lucky Wheel Bot")
+            sys.exit(1)
+            
+    except KeyboardInterrupt:
+        print("\n🛑 Interrupted by user")
+    except Exception as e:
+        logger.error(f"❌ Unexpected error: {e}")
+    finally:
+        bot.stop_all()
 
 if __name__ == "__main__":
     main()
