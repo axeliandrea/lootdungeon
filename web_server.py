@@ -202,22 +202,17 @@ class MiniAppHandler(BaseHTTPRequestHandler):
 def run_server(port=8080):
     """Run the web server"""
     try:
-        server_address = ('0.0.0.0', port)
+        server_address = ('', port)
         httpd = HTTPServer(server_address, MiniAppHandler)
         logger.info(f"Mini App server running on port {port}")
-        logger.info(f"Access Lucky Wheel at: http://localhost:{port}/luckywheel.html")
+        logger.info(f"Access Lucky Wheel at: http://lootdungeon.online/luckywheel.html")
         
         print(f"""
 🎡 Lucky Wheel Mini App Server Started!
 ========================================
 
-📍 Server URL: http://localhost:{port}
-🎯 Lucky Wheel: http://localhost:{port}/luckywheel.html
-
-💡 Instructions:
-1. Bot akan otomatis menjalankan di port yang sama
-2. Mini App bisa diakses langsung dari browser untuk testing
-3. Dari Telegram, klik tombol untuk membuka Mini App
+📍 Server URL: http://lootdungeon.online
+🎯 Lucky Wheel: http://lootdungeon.online/luckywheel.html
 
 ⚡ Server ready untuk menerima koneksi...
         """)
