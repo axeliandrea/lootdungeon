@@ -9,6 +9,8 @@ import sqlite3
 from datetime import datetime
 import os
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 # Konfigurasi logging
 logging.basicConfig(
     level=logging.INFO,
@@ -18,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 class MiniAppHandler(BaseHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
-        self.db_path = "/workspace/bot_database.db"
+        self.db_path = os.path.join(BASE_DIR, "bot_database.db")
         super().__init__(*args, **kwargs)
 
     def do_GET(self):
@@ -29,7 +31,7 @@ class MiniAppHandler(BaseHTTPRequestHandler):
             
             # Serve Lucky Wheel HTML
             if path == '/luckywheel.html':
-                self.serve_html_file('/workspace/luckywheel.html')
+                self.serve_html_file(os.path.join(BASE_DIR, "luckywheel.html"))
             elif path == '/':
                 # Redirect to lucky wheel
                 self.send_response(302)
