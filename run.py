@@ -85,7 +85,8 @@ class LuckyWheelBot:
             
             if self.web_server_process.poll() is None:
                 logger.info(f"✅ Web Server started successfully on port {port}")
-                logger.info(f"🌐 Mini App URL: http://localhost:{port}/luckywheel.html")
+                logger.info(f"🌐 Mini App URL: https://lootdungeon.online/luckywheel.html")
+                os.environ['WEB_SERVER_URL'] = "https://lootdungeon.online"
                 return True
             else:
                 error_output = self.web_server_process.stderr.read()
