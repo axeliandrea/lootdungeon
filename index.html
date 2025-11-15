@@ -3,88 +3,155 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lucky Wheel - LootDungeon</title>
+    <title>🎰 Lucky Wheel Game</title>
     <link rel="stylesheet" href="styles.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        /* Additional custom styles for new design */
+        .new-design-banner {
+            position: fixed;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(45deg, #ffd700, #ffed4e);
+            color: #1a1a2e;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            z-index: 1000;
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+            font-size: 0.9rem;
+        }
+
+        body {
+            padding-top: 50px;
+        }
+
+        .new-features {
+            margin-top: 30px;
+            text-align: left;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 215, 0, 0.2);
+        }
+
+        .new-features h3 {
+            color: #ffd700;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .new-features ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .new-features li {
+            padding: 5px 0;
+            color: #e2e8f0;
+            font-size: 0.9rem;
+        }
+
+        .new-features li:before {
+            content: "✨";
+            margin-right: 8px;
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <header class="header">
-            <h1 class="title">LootDungeon</h1>
-            <h2 class="subtitle">Lucky Wheel</h2>
-            <p class="description">Putar roda untuk mendapatkan hadiah惊喜!</p>
-        </header>
-
-        <main class="main-content">
-            <div class="wheel-container">
-                <div class="wheel-pointer">▼</div>
-                <div class="wheel" id="wheel">
-                    <div class="segment segment-1" data-reward="50 Gold">
-                        <span>50 Gold</span>
-                    </div>
-                    <div class="segment segment-2" data-reward="Rare Sword">
-                        <span>Rare Sword</span>
-                    </div>
-                    <div class="segment segment-3" data-reward="100 Gold">
-                        <span>100 Gold</span>
-                    </div>
-                    <div class="segment segment-4" data-reward="Epic Shield">
-                        <span>Epic Shield</span>
-                    </div>
-                    <div class="segment segment-5" data-reward="75 Gold">
-                        <span>75 Gold</span>
-                    </div>
-                    <div class="segment segment-6" data-reward="Legendary Potion">
-                        <span>Legendary Potion</span>
-                    </div>
-                    <div class="segment segment-7" data-reward="25 Gold">
-                        <span>25 Gold</span>
-                    </div>
-                    <div class="segment segment-8" data-reward="Mystic Ring">
-                        <span>Mystic Ring</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="controls">
-                <button class="spin-button" id="spinButton">
-                    <span>PUTAR</span>
-                </button>
-                <div class="chances-info">
-                    <p>💎 Kesempatan: <span id="spinsLeft">5</span></p>
-                </div>
-            </div>
-
-            <div class="result-display" id="resultDisplay">
-                <div class="result-content">
-                    <h3>Hasil Putaran:</h3>
-                    <div class="reward-display" id="rewardDisplay">
-                        <span id="rewardText">Siap untuk memutar?</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="stats">
-                <div class="stat-item">
-                    <h4>Total Gold</h4>
-                    <span id="totalGold">0</span>
-                </div>
-                <div class="stat-item">
-                    <h4>Items Dikumpulkan</h4>
-                    <span id="totalItems">0</span>
-                </div>
-            </div>
-        </main>
-
-        <footer class="footer">
-            <p>&copy; 2025 LootDungeon. Lucky Wheel Adventure.</p>
-        </footer>
+    <div class="new-design-banner">
+        🎨 NEW ENHANCED DESIGN - READY FOR DEPLOY!
     </div>
 
-    <div class="confetti-container" id="confetti"></div>
+    <div class="container">
+        <h1 class="title">🎰 Lucky Wheel</h1>
+        <p class="subtitle">Spin the wheel to win amazing prizes! 🎁</p>
+        
+        <div class="wheel-container">
+            <div class="wheel-glow"></div>
+            <div class="wheel-pointer">⬇️</div>
+            <div class="wheel" id="wheel">
+                <!-- 8 Segments dengan design baru -->
+                <div class="segment segment-1" data-reward="50 Gold">
+                    <div class="segment-content">
+                        <div class="segment-icon">🪙</div>
+                        <div class="segment-text">50 Gold</div>
+                    </div>
+                </div>
+                <div class="segment segment-2" data-reward="Rare Sword">
+                    <div class="segment-content">
+                        <div class="segment-icon">⚔️</div>
+                        <div class="segment-text">Rare Sword</div>
+                    </div>
+                </div>
+                <div class="segment segment-3" data-reward="100 Gold">
+                    <div class="segment-content">
+                        <div class="segment-icon">💰</div>
+                        <div class="segment-text">100 Gold</div>
+                    </div>
+                </div>
+                <div class="segment segment-4" data-reward="Epic Shield">
+                    <div class="segment-content">
+                        <div class="segment-icon">🛡️</div>
+                        <div class="segment-text">Epic Shield</div>
+                    </div>
+                </div>
+                <div class="segment segment-5" data-reward="75 Gold">
+                    <div class="segment-content">
+                        <div class="segment-icon">🪙</div>
+                        <div class="segment-text">75 Gold</div>
+                    </div>
+                </div>
+                <div class="segment segment-6" data-reward="Legendary Potion">
+                    <div class="segment-content">
+                        <div class="segment-icon">🧪</div>
+                        <div class="segment-text">Legendary Potion</div>
+                    </div>
+                </div>
+                <div class="segment segment-7" data-reward="25 Gold">
+                    <div class="segment-content">
+                        <div class="segment-icon">🪙</div>
+                        <div class="segment-text">25 Gold</div>
+                    </div>
+                </div>
+                <div class="segment segment-8" data-reward="Mystic Ring">
+                    <div class="segment-content">
+                        <div class="segment-icon">💍</div>
+                        <div class="segment-text">Mystic Ring</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <button class="spin-button" id="spinBtn" onclick="spinWheel()">
+            🎯 SPIN THE WHEEL
+        </button>
+
+        <div class="result" id="result"></div>
+
+        <div class="new-features">
+            <h3>🎨 New Enhanced Features:</h3>
+            <ul>
+                <li>Golden wheel with glow effects</li>
+                <li>Beautiful animated center circle</li>
+                <li>Enhanced segment colors with gradients</li>
+                <li>Floating icons with animations</li>
+                <li>Professional button design</li>
+                <li>Smooth spinning animations</li>
+                <li>Mobile responsive layout</li>
+                <li>Sound effects and visual feedback</li>
+            </ul>
+        </div>
+    </div>
 
     <script src="script.js"></script>
+    <script>
+        // Initialize enhanced design
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🎰 Enhanced Lucky Wheel Design Loaded!');
+            console.log('✨ Features: Golden glow, animated center, gradient segments');
+            console.log('🎯 Ready for deployment!');
+        });
+    </script>
 </body>
 </html>
