@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lucky Wheel Roulette</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            overflow: hidden;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .header {
+            margin-bottom: 30px;
+        }
+
+        .title {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin-bottom: 20px;
+        }
+
+        .user-info {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 30px;
+            font-size: 0.9rem;
+        }
+
+        .wheel-container {
+            position: relative;
+            margin: 30px auto;
+            width: 300px;
+            height: 300px;
+        }
+
+        .wheel {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            background: #333;
+            transition: transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99);
+        }
+
+        .wheel-segment {
+            position: absolute;
+            width: 50%;
+            height: 50%;
+            transform-origin: 100% 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+        }
+
+        .segment-0 { background: #ff6b6b; transform: rotate(0deg); }
+        .segment-1 { background: #4ecdc4; transform: rotate(45deg); }
+        .segment-2 { background: #45b7d1; transform: rotate(90deg); }
+        .segment-3 { background: #96ceb4; transform: rotate(135deg); }
+        .segment-4 { background: #ffeaa7; transform: rotate(180deg); }
+        .segment-5 { background: #dda0dd; transform: rotate(225deg); }
+        .segment-6 { background: #98d8c8; transform: rotate(270deg); }
+        .segment-7 { background: #f7dc6f; transform: rotate(315deg); }
+
+        .segment-text {
+            position: absolute;
+            top: 50%;
+            right: 10px;
+            transform: translateY(-50%) rotate(22.5deg);
+            width: 60px;
+            text-align: center;
+            font-size: 0.8rem;
+            line-height: 1.1;
+        }
+
+        .wheel-pointer {
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-top: 20px solid #fff;
+            z-index: 10;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+        }
+
+        .spin-button {
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            border: none;
+            border-radius: 50px;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+            transition: all 0.3s ease;
+            margin: 20px 0;
+        }
+
+        .spin-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 107, 107, 0.6);
+        }
+
+        .spin-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .result-container {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+            display: none;
+            animation: fadeInUp 0.5s ease-out;
+        }
+
+        .result-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .result-emoji {
+            font-size: 3rem;
+            margin: 10px 0;
+        }
+
+        .result-text {
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+        }
+
+        .play-again {
+            background: linear-gradient(45deg, #4ecdc4, #44a08d);
+            border: none;
+            border-radius: 25px;
+            padding: 10px 25px;
+            font-size: 1rem;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .play-again:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(78, 205, 196, 0.4);
+        }
+
+        .loading {
+            display: none;
+            margin: 20px 0;
+        }
+
+        .loading-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: white;
+            margin: 0 2px;
+            animation: loading 1.4s infinite ease-in-out both;
+        }
+
+        .loading-dot:nth-child(1) { animation-delay: -0.32s; }
+        .loading-dot:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes loading {
+            0%, 80%, 100% {
+                transform: scale(0);
+            }
+            40% {
+                transform: scale(1);
+            }
+        }
+
+        .owner-badge {
+            background: linear-gradient(45deg, #ffd700, #ffed4e);
+            color: #333;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            display: inline-block;
+        }
+
+        .prize-info {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 10px;
+            margin-top: 15px;
+            font-size: 0.85rem;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="title">🎡 Lucky Wheel</div>
+            <div class="subtitle">Roulette Hadiah Menanti!</div>
+        </div>
+
+        <div class="user-info" id="userInfo">
+            <!-- Will be populated by JavaScript -->
+        </div>
+
+        <div class="wheel-container">
+            <div class="wheel-pointer"></div>
+            <div class="wheel" id="wheel">
+                <!-- Wheel segments will be generated by JavaScript -->
+            </div>
+        </div>
+
+        <button class="spin-button" id="spinButton" onclick="spinWheel()">
+            🎲 SPIN LUCKY WHEEL
+        </button>
+
+        <div class="loading" id="loading">
+            <div class="loading-dot"></div>
+            <div class="loading-dot"></div>
+            <div class="loading-dot"></div>
+        </div>
+
+        <div class="result-container" id="resultContainer">
+            <!-- Results will be displayed here -->
+        </div>
+
+        <div class="prize-info">
+            <strong>💎 Hadiah yang bisa didapat:</strong><br>
+            💰 1x = 100 Fizz Coin | 💰 3x = 300 Fizz Coin | 💰 5x = 500 Fizz Coin<br>
+            🎫 1x = 1 Lucky Ticket | 🎫 3x = 3 Lucky Ticket | 🎫 5x = 5 Lucky Ticket<br>
+            🧪 5x = 5 HP Potion | ☠️ = Zonk (手氣不順)
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const prizes = [
+            { type: 'fizz_coin', value: 100, emoji: '💰 1x', color: '#ff6b6b', name: '100 Fizz Coin' },
+            { type: 'fizz_coin', value: 300, emoji: '💰 3x', color: '#4ecdc4', name: '300 Fizz Coin' },
+            { type: 'fizz_coin', value: 500, emoji: '💰 5x', color: '#45b7d1', name: '500 Fizz Coin' },
+            { type: 'lucky_ticket', value: 1, emoji: '🎫 1x', color: '#96ceb4', name: '1 Lucky Ticket' },
+            { type: 'lucky_ticket', value: 3, emoji: '🎫 3x', color: '#ffeaa7', name: '3 Lucky Ticket' },
+            { type: 'lucky_ticket', value: 5, emoji: '🎫 5x', color: '#dda0dd', name: '5 Lucky Ticket' },
+            { type: 'hp_potion', value: 5, emoji: '🧪 5x', color: '#98d8c8', name: '5 HP Potion' },
+            { type: 'zonk', value: 0, emoji: '☠️', color: '#f7dc6f', name: 'Zonk' }
+        ];
+
+        let userData = {};
+        let isSpinning = false;
+        let currentRotation = 0;
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            initWheel();
+            loadUserData();
+        });
+
+        function initWheel() {
+            const wheel = document.getElementById('wheel');
+            wheel.innerHTML = '';
+
+            prizes.forEach((prize, index) => {
+                const segment = document.createElement('div');
+                segment.className = `wheel-segment segment-${index}`;
+                segment.style.backgroundColor = prize.color;
+                
+                const text = document.createElement('div');
+                text.className = 'segment-text';
+                text.innerHTML = prize.emoji;
+                
+                segment.appendChild(text);
+                wheel.appendChild(segment);
+            });
+        }
+
+        function loadUserData() {
+            // Get Telegram Web App data
+            if (window.Telegram && window.Telegram.WebApp) {
+                const tgData = window.Telegram.WebApp.initDataUnsafe;
+                if (tgData && tgData.user) {
+                    userData = {
+                        user_id: tgData.user.id,
+                        username: tgData.user.username || tgData.user.first_name,
+                        is_owner: tgData.user.id === 6395738130
+                    };
+                }
+            }
+
+            // Update user info display
+            const userInfo = document.getElementById('userInfo');
+            userInfo.innerHTML = `
+                ${userData.is_owner ? '<div class="owner-badge">🏆 OWNER MODE</div>' : ''}
+                <strong>Player:</strong> @${userData.username || 'Unknown'}<br>
+                ${userData.is_owner ? 'Tiket: UNLIMITED' : 'Tiket: 1 (sudah dikurangi)'}
+            `;
+        }
+
+        function spinWheel() {
+            if (isSpinning) return;
+
+            isSpinning = true;
+            const spinButton = document.getElementById('spinButton');
+            const loading = document.getElementById('loading');
+            const resultContainer = document.getElementById('resultContainer');
+
+            // Disable button and show loading
+            spinButton.disabled = true;
+            loading.style.display = 'block';
+            resultContainer.style.display = 'none';
+
+            // Calculate random result
+            const randomIndex = Math.floor(Math.random() * prizes.length);
+            const winningPrize = prizes[randomIndex];
+
+            // Calculate rotation (multiple full rotations + target angle)
+            const segmentAngle = 360 / prizes.length;
+            const targetAngle = randomIndex * segmentAngle + (segmentAngle / 2);
+            const fullRotations = 5; // 5 full rotations
+            const finalRotation = currentRotation + (fullRotations * 360) + (360 - targetAngle);
+
+            // Apply rotation
+            const wheel = document.getElementById('wheel');
+            wheel.style.transform = `rotate(${finalRotation}deg)`;
+
+            currentRotation = finalRotation;
+
+            // Show result after animation
+            setTimeout(() => {
+                showResult(winningPrize);
+                loading.style.display = 'none';
+                spinButton.disabled = false;
+                isSpinning = false;
+            }, 4000);
+        }
+
+        function showResult(prize) {
+            const resultContainer = document.getElementById('resultContainer');
+            
+            if (prize.type === 'zonk') {
+                resultContainer.innerHTML = `
+                    <div class="result-title">☠️ ZONK!</div>
+                    <div class="result-emoji">😔</div>
+                    <div class="result-text">手氣不順! Jangan menyerah, coba lagi!</div>
+                `;
+            } else {
+                const typeNames = {
+                    'fizz_coin': 'Fizz Coin',
+                    'lucky_ticket': 'Lucky Ticket',
+                    'hp_potion': 'HP Potion'
+                };
+                
+                const typeName = typeNames[prize.type] || prize.type;
+                
+                resultContainer.innerHTML = `
+                    <div class="result-title">🎉 SELAMAT!</div>
+                    <div class="result-emoji">${prize.emoji}</div>
+                    <div class="result-text">Kamu mendapatkan ${prize.value} ${typeName}!</div>
+                `;
+            }
+            
+            resultContainer.style.display = 'block';
+
+            // Send result to bot (if Telegram Web App is available)
+            if (window.Telegram && window.Telegram.WebApp && userData.user_id) {
+                // Prepare data to send back to bot
+                const resultData = {
+                    user_id: userData.user_id,
+                    prize_type: prize.type,
+                    prize_value: prize.value,
+                    prize_emoji: prize.emoji,
+                    timestamp: Date.now()
+                };
+
+                // Send to bot via Telegram Web App
+                window.Telegram.WebApp.sendData(JSON.stringify(resultData));
+                
+                // Show close button
+                const closeButton = document.createElement('button');
+                closeButton.className = 'play-again';
+                closeButton.textContent = '🔙 Kembali ke Bot';
+                closeButton.onclick = () => window.Telegram.WebApp.close();
+                resultContainer.appendChild(closeButton);
+            }
+        }
+
+        // Telegram Web App event handlers
+        if (window.Telegram && window.Telegram.WebApp) {
+            window.Telegram.WebApp.ready();
+            
+            window.Telegram.WebApp.onEvent('themeChanged', function() {
+                // Handle theme changes if needed
+                document.body.style.background = window.Telegram.WebApp.themeParams.bg_color || 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+            });
+        }
+
+        // Fallback for non-Telegram browsers
+        function getQueryParam(name) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name);
+        }
+
+        // Check if running in Telegram
+        if (!window.Telegram) {
+            document.querySelector('.user-info').innerHTML = `
+                <strong>Mode Demo</strong><br>
+                Player: Demo User<br>
+                <em>Jalankan di Telegram untuk fitur lengkap</em>
+            `;
+        }
+    </script>
+</body>
+</html>
