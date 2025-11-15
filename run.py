@@ -76,8 +76,9 @@ class LuckyWheelBot:
             
             # Start web server
             self.web_server_process = Popen([
-                sys.executable, '/workspace/web_server.py'
+                sys.executable, os.path.join(os.getcwd(), "web_server.py")
             ], stdout=PIPE, stderr=PIPE, text=True)
+
             
             # Wait and check if started successfully
             time.sleep(3)
@@ -106,8 +107,9 @@ class LuckyWheelBot:
                 os.environ['WEB_SERVER_URL'] = f"http://localhost:{port}"
             
             self.bot_process = Popen([
-                sys.executable, '/workspace/bot.py'
+                sys.executable, os.path.join(os.getcwd(), "bot.py")
             ], stdout=PIPE, stderr=PIPE, text=True)
+
             
             time.sleep(3)
             
