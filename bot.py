@@ -16,7 +16,7 @@ from telegram.constants import ParseMode
 # ============================
 # CONFIG
 # ============================
-BOT_TOKEN = "YOUR_BOT_TOKEN_HERE"
+BOT_TOKEN = "8533524958:AAEgMfl3NS9SzTMCOpy1YpJMGQfNzKcdvv8"
 OWNER_ID = 6395738130
 GROUP_CHAT_ID = -1002917701297
 CHANNEL_ID = -1002502508906
