@@ -530,7 +530,7 @@ async def webapp_data_handler(update: Update, context: ContextTypes.DEFAULT_TYPE
         logger.error(f"❌ WebAppData handler error: {e}")
         await update.message.reply_text("❌ Error memproses hasil spin!")
 
-async def update_web_server_url():
+def update_web_server_url():
     """Update WEB_SERVER_URL (opsional untuk development)"""
     # Dalam production, URL sudah diset ke GitHub Pages
     logger.info(f"🌐 Web Server URL: {WEB_SERVER_URL}")
@@ -550,7 +550,7 @@ def main():
         app.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, webapp_data_handler))
         
         # Update URL
-        asyncio.create_task(update_web_server_url())
+        update_web_server_url()
         
         logger.info("🚀 Lucky Wheel Bot STARTED with prize system FIXED!")
         logger.info(f"🌐 Web Server URL: {WEB_SERVER_URL}")
