@@ -5,44 +5,44 @@ import asyncio
 import logging
 import sqlite3
 import json
-import hashlib
 from datetime import datetime
-from urllib.parse import urljoin
-
-import requests
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
+from telegram.ext import (
+    Application, CommandHandler, CallbackQueryHandler,
+    ContextTypes, MessageHandler, filters
+)
 from telegram.constants import ParseMode
 
-# Konfigurasi Bot
-BOT_TOKEN = "8533524958:AAEgMfl3NS9SzTMCOpy1YpJMGQfNzKcdvv8"
+# ============================
+# CONFIG
+# ============================
+BOT_TOKEN = "YOUR_BOT_TOKEN_HERE"
 OWNER_ID = 6395738130
 GROUP_CHAT_ID = -1002917701297
 CHANNEL_ID = -1002502508906
 
-# URL untuk Mini App (akan diupdate setelah web server running)
-WEB_SERVER_URL = "https://axeliandrea.github.io/lootdungeon"  # Akan diupdate otomatis
+# URL MINI APP
+WEB_SERVER_URL = "https://axeliandrea.github.io/lootdungeon"
 
-# Konfigurasi logging
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
-)
+# Logging
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Database Manager
+
+# ============================
+# DATABASE
+# ============================
 class DatabaseManager:
-    def __init__(self, db_path="bot_database.db"):
-        self.db_path = db_path
-        self.init_database()
-    
-    def init_database(self):
-        """Inisialisasi database dengan tabel yang diperlukan"""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-        
-        # Tabel users untuk menyimpan data user
-        cursor.execute('''
+    def __init__(self, db="bot_database.db"):
+        self.db = db
+        self.init()
+
+    def init(self):
+        conn = sqlite3.connect(self.db)
+        cur = conn.cursor()
+
+        # USER TABLE
+        cur.execute("""
             CREATE TABLE IF NOT EXISTS users (
                 user_id INTEGER PRIMARY KEY,
                 username TEXT,
@@ -52,613 +52,263 @@ class DatabaseManager:
                 join_channel BOOLEAN DEFAULT FALSE,
                 fizz_coin INTEGER DEFAULT 0,
                 lucky_ticket INTEGER DEFAULT 3,
-                hp_potion INTEGER DEFAULT 0,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                last_spin TIMESTAMP
+                hp_potion INTEGER DEFAULT 0
             )
-        ''')
-        
-        # Tabel spin_history untuk menyimpan riwayat spin
-        cursor.execute('''
+        """)
+
+        # SPIN HISTORY
+        cur.execute("""
             CREATE TABLE IF NOT EXISTS spin_history (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id INTEGER,
                 prize_type TEXT,
                 prize_value INTEGER,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (user_id) REFERENCES users (user_id)
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
-        ''')
-        
-        # Tabel prizes untuk konfigurasi hadiah
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS prizes (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                prize_type TEXT,
-                prize_value INTEGER,
-                prize_name TEXT,
-                emoji TEXT
-            )
-        ''')
-        
-        # Insert default prizes
-        default_prizes = [
-            ("fizz_coin", 100, "100 Fizz Coin", "💰 1x"),
-            ("fizz_coin", 300, "300 Fizz Coin", "💰 3x"),
-            ("fizz_coin", 500, "500 Fizz Coin", "💰 5x"),
-            ("lucky_ticket", 1, "1 Lucky Ticket", "🎫 1x"),
-            ("lucky_ticket", 3, "3 Lucky Ticket", "🎫 3x"),
-            ("lucky_ticket", 5, "5 Lucky Ticket", "🎫 5x"),
-            ("hp_potion", 5, "5 HP Potion", "🧪 5x"),
-            ("zonk", 0, "Zonk", "☠️")
-        ]
-        
-        for prize in default_prizes:
-            cursor.execute('''
-                INSERT OR IGNORE INTO prizes (prize_type, prize_value, prize_name, emoji)
-                VALUES (?, ?, ?, ?)
-            ''', prize)
-        
+        """)
+
         conn.commit()
         conn.close()
-    
-    def get_user(self, user_id):
-        """Ambil data user"""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-        cursor.execute('SELECT * FROM users WHERE user_id = ?', (user_id,))
-        user = cursor.fetchone()
+
+    def get_user(self, uid):
+        conn = sqlite3.connect(self.db)
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM users WHERE user_id = ?", (uid,))
+        u = cur.fetchone()
         conn.close()
-        return user
-    
-    def create_user(self, user_id, username, first_name):
-        """Buat data user baru"""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-        cursor.execute('''
-            INSERT OR REPLACE INTO users (user_id, username, first_name)
+        return u
+
+    def create_user(self, uid, uname, fname):
+        conn = sqlite3.connect(self.db)
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT OR IGNORE INTO users (user_id, username, first_name)
             VALUES (?, ?, ?)
-        ''', (user_id, username, first_name))
+        """, (uid, uname, fname))
         conn.commit()
         conn.close()
-    
-    def update_user_status(self, user_id, **kwargs):
-        """Update status user"""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-        
+
+    def update(self, uid, **kwargs):
+        conn = sqlite3.connect(self.db)
+        cur = conn.cursor()
         fields = []
-        values = []
-        for key, value in kwargs.items():
-            fields.append(f"{key} = ?")
-            values.append(value)
-        values.append(user_id)
-        
-        query = f"UPDATE users SET {', '.join(fields)} WHERE user_id = ?"
-        cursor.execute(query, values)
+        vals = []
+        for k, v in kwargs.items():
+            fields.append(f"{k}=?")
+            vals.append(v)
+        vals.append(uid)
+        cur.execute(f"UPDATE users SET {','.join(fields)} WHERE user_id=?", vals)
         conn.commit()
         conn.close()
-    
-    def get_prizes(self):
-        """Ambil semua hadiah dengan probabilitas"""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-        cursor.execute('SELECT * FROM prizes')
-        prizes = cursor.fetchall()
-        conn.close()
-        return prizes
-    
-    def add_prize_to_user(self, user_id, prize_type, prize_value):
-        """Tambah hadiah ke inventory user"""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-        
-        # Update inventory user
-        if prize_type == "fizz_coin":
-            cursor.execute('''
-                UPDATE users SET fizz_coin = fizz_coin + ?
-                WHERE user_id = ?
-            ''', (prize_value, user_id))
-        elif prize_type == "lucky_ticket":
-            cursor.execute('''
-                UPDATE users SET lucky_ticket = lucky_ticket + ?
-                WHERE user_id = ?
-            ''', (prize_value, user_id))
-        elif prize_type == "hp_potion":
-            cursor.execute('''
-                UPDATE users SET hp_potion = hp_potion + ?
-                WHERE user_id = ?
-            ''', (prize_value, user_id))
-        
-        # Tambah ke history
-        cursor.execute('''
-            INSERT INTO spin_history (user_id, prize_type, prize_value)
-            VALUES (?, ?, ?)
-        ''', (user_id, prize_type, prize_value))
-        
+
+    def add_prize(self, uid, ptype, value):
+        conn = sqlite3.connect(self.db)
+        cur = conn.cursor()
+
+        if ptype == "fizz_coin":
+            cur.execute("UPDATE users SET fizz_coin = fizz_coin + ? WHERE user_id = ?", (value, uid))
+        elif ptype == "lucky_ticket":
+            cur.execute("UPDATE users SET lucky_ticket = lucky_ticket + ? WHERE user_id = ?", (value, uid))
+        elif ptype == "hp_potion":
+            cur.execute("UPDATE users SET hp_potion = hp_potion + ? WHERE user_id = ?", (value, uid))
+
+        cur.execute("INSERT INTO spin_history (user_id, prize_type, prize_value) VALUES (?, ?, ?)",
+                    (uid, ptype, value))
+
         conn.commit()
         conn.close()
-    
-    def deduct_ticket(self, user_id):
-        """Kurangi 1 tiket dari user (kecuali owner)"""
-        if user_id == OWNER_ID:
+
+    def deduct_ticket(self, uid):
+        if uid == OWNER_ID:
             return True
-        
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-        
-        # Cek apakah user punya tiket
-        cursor.execute('SELECT lucky_ticket FROM users WHERE user_id = ?', (user_id,))
-        result = cursor.fetchone()
-        
-        if result and result[0] > 0:
-            cursor.execute('''
-                UPDATE users SET lucky_ticket = lucky_ticket - 1
-                WHERE user_id = ?
-            ''', (user_id,))
+        conn = sqlite3.connect(self.db)
+        cur = conn.cursor()
+        cur.execute("SELECT lucky_ticket FROM users WHERE user_id=?", (uid,))
+        t = cur.fetchone()
+        if t and t[0] > 0:
+            cur.execute("UPDATE users SET lucky_ticket = lucky_ticket - 1 WHERE user_id=?", (uid,))
             conn.commit()
             conn.close()
             return True
-        
         conn.close()
         return False
-    
-    def get_user_inventory(self, user_id):
-        """Ambil inventory user"""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-        cursor.execute('''
-            SELECT fizz_coin, lucky_ticket, hp_potion
-            FROM users WHERE user_id = ?
-        ''', (user_id,))
-        result = cursor.fetchone()
+
+    def inventory(self, uid):
+        conn = sqlite3.connect(self.db)
+        cur = conn.cursor()
+        cur.execute("SELECT fizz_coin, lucky_ticket, hp_potion FROM users WHERE user_id=?", (uid,))
+        r = cur.fetchone()
         conn.close()
-        
-        if result:
-            return {
-                'fizz_coin': result[0],
-                'lucky_ticket': result[1],
-                'hp_potion': result[2]
-            }
+        if r:
+            return {"fizz_coin": r[0], "lucky_ticket": r[1], "hp_potion": r[2]}
         return None
 
-# Fungsi untuk memeriksa membership
-async def check_user_membership(user_id, bot):
-    """Periksa apakah user sudah join group dan channel"""
-    try:
-        # Cek group membership
-        group_member = await bot.get_chat_member(GROUP_CHAT_ID, user_id)
-        in_group = group_member.status in ['member', 'administrator', 'creator']
-        
-        # Cek channel membership
-        channel_member = await bot.get_chat_member(CHANNEL_ID, user_id)
-        in_channel = channel_member.status in ['member', 'administrator', 'creator']
-        
-        return in_group, in_channel
-    except Exception as e:
-        logger.error(f"Error checking membership: {e}")
-        return False, False
 
-# Inisialisasi database
 db = DatabaseManager()
 
-# Handler untuk command /start
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handler untuk command /start"""
-    user = update.effective_user
-    
-    # Buat atau update data user
-    db.create_user(user.id, user.username, user.first_name)
-    
-    # Periksa membership
-    in_group, in_channel = await check_user_membership(user.id, context.bot)
-    
-    if user.id == OWNER_ID:
-        db.update_user_status(user.id, registered=True, join_group=True, join_channel=True)
-    
-    message = f"""
-🎮 **Lucky Wheel Bot sudah aktif!**
 
-👋 Halo {user.first_name}!
-
-Untuk mulai bermain, kamu harus:
-1️⃣ Join Group Chat: https://t.me/{GROUP_CHAT_ID}
-2️⃣ Join Channel: https://t.me/{CHANNEL_ID}
-
-Ketik /menu untuk melihat semua fitur yang tersedia.
-
-**Reward yang bisa didapat:**
-💰 Fizz Coin untuk belanja
-🎫 Lucky Ticket untuk spin roulette
-🧪 HP Potion untuk healing
-☠️ Zonk (手氣不順)
-
-Selamat bermain! 🍀
-"""
-    
-    await update.message.reply_text(message, parse_mode=ParseMode.MARKDOWN)
-
-# Handler untuk command /menu
-async def menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handler untuk command /menu"""
-    user = update.effective_user
-    user_data = db.get_user(user.id)
-    
-    if not user_data:
-        db.create_user(user.id, user.username, user.first_name)
-        user_data = db.get_user(user.id)
-    
-    in_group, in_channel = await check_user_membership(user.id, context.bot)
-    
-    # Update membership status di database
-    if user.id != OWNER_ID:
-        db.update_user_status(
-            user.id,
-            join_group=in_group,
-            join_channel=in_channel,
-            registered=in_group and in_channel
+# ============================
+# MEMBERSHIP CHECK
+# ============================
+async def check_membership(uid, bot):
+    try:
+        g = await bot.get_chat_member(GROUP_CHAT_ID, uid)
+        c = await bot.get_chat_member(CHANNEL_ID, uid)
+        return (
+            g.status in ["member", "administrator", "creator"],
+            c.status in ["member", "administrator", "creator"]
         )
-    
-    if not in_group or not in_channel:
-        message = """
-⚠️ **Syarat belum terpenuhi!**
+    except:
+        return False, False
 
-Untuk mengakses semua fitur, kamu harus:
-1️⃣ Join Group Chat: https://t.me/{GROUP_CHAT_ID}
-2️⃣ Join Channel: https://t.me/{CHANNEL_ID}
 
-Setelah join, ketik /menu lagi untuk melihat menu game.
+# ============================
+# COMMAND: START
+# ============================
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    u = update.effective_user
+    db.create_user(u.id, u.username, u.first_name)
+
+    msg = f"""
+🎮 **Lucky Wheel Bot aktif!**
+
+👋 Halo {u.first_name}!
+
+Join dulu sebelum bermain:
+🔗 Group: https://t.me/+YOURGROUP
+🔗 Channel: https://t.me/+YOURCHANNEL
+
+Kirim /menu untuk mulai bermain.
 """
-        await update.message.reply_text(message, parse_mode=ParseMode.MARKDOWN)
+    await update.message.reply_text(msg, parse_mode=ParseMode.MARKDOWN)
+
+
+# ============================
+# COMMAND: MENU
+# ============================
+async def menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    u = update.effective_user
+    db.create_user(u.id, u.username, u.first_name)
+
+    ing, inch = await check_membership(u.id, context.bot)
+
+    db.update(u.id, join_group=ing, join_channel=inch, registered=ing and inch)
+
+    if not (ing and inch) and u.id != OWNER_ID:
+        await update.message.reply_text("⚠️ Kamu harus join group + channel dulu.")
         return
-    
-    # Buat keyboard menu 3x3
-    keyboard = [
-        [InlineKeyboardButton("📝 REGISTER", callback_data="register"),
-         InlineKeyboardButton("🎡 LUCKY WHEEL", callback_data="lucky_wheel"),
-         InlineKeyboardButton("🎒 INVENTORY", callback_data="inventory")],
-        
-        [InlineKeyboardButton("⏳ COMING SOON", callback_data="coming_soon"),
-         InlineKeyboardButton("⏳ COMING SOON", callback_data="coming_soon"),
-         InlineKeyboardButton("⏳ COMING SOON", callback_data="coming_soon")],
-        
-        [InlineKeyboardButton("⏳ COMING SOON", callback_data="coming_soon"),
-         InlineKeyboardButton("⏳ COMING SOON", callback_data="coming_soon"),
-         InlineKeyboardButton("⏳ COMING SOON", callback_data="coming_soon")]
+
+    inv = db.inventory(u.id)
+    text = f"""
+🎮 **GAME MENU**
+
+💰 Fizz Coin: {inv['fizz_coin']}
+🎫 Lucky Ticket: {inv['lucky_ticket']}
+🧪 HP Potion: {inv['hp_potion']}
+"""
+
+    kb = [
+        [InlineKeyboardButton("🎡 Lucky Wheel", callback_data="lucky")],
+        [InlineKeyboardButton("🎒 Inventory", callback_data="inv")]
     ]
-    
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    
-    # Ambil data inventory
-    inventory = db.get_user_inventory(user.id)
-    if inventory:
-        inventory_text = f"""
-📊 **Status Player:**
-💰 Fizz Coin: {inventory['fizz_coin']:,}
-🎫 Lucky Ticket: {inventory['lucky_ticket']:,}
-🧪 HP Potion: {inventory['hp_potion']:,}
-"""
-    else:
-        inventory_text = ""
-    
-    message = f"""
-🎮 **Lucky Wheel Game Menu**
+    await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN,
+                                    reply_markup=InlineKeyboardMarkup(kb))
 
-{inventory_text}
 
-Pilih menu di bawah untuk bermain:
-"""
-    
-    await update.message.reply_text(message, parse_mode=ParseMode.MARKDOWN, reply_markup=reply_markup)
+# ============================
+# CALLBACK BUTTONS
+# ============================
+async def button_handler(update: Update, context):
+    q = update.callback_query
+    await q.answer()
 
-# Handler untuk callback query
-async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handler untuk callback button"""
-    query = update.callback_query
-    await query.answer()
-    
-    user = query.from_user
-    user_id = user.id
-    
-    if query.data == "register":
-        in_group, in_channel = await check_user_membership(user_id, context.bot)
-        
-        if user_id == OWNER_ID:
-            message = "✅ **OWNER STATUS**\nKamu adalah owner bot ini dan memiliki akses unlimited!"
-        elif in_group and in_channel:
-            db.update_user_status(user_id, registered=True)
-            message = """
-✅ **REGISTRASI BERHASIL!**
+    uid = q.from_user.id
 
-Selamat! Kamu sudah terdaftar sebagai player aktif.
-
-✨ **Keuntungan:**
-- Tiket Lucky Wheel gratis untuk memulai
-- Akses ke semua fitur game
-- Dapat hadia-hadiah menarik dari roulette
-
-Ketik /menu untuk mulai bermain!
-"""
-        else:
-            status = []
-            if not in_group:
-                status.append("❌ Group Chat")
-            else:
-                status.append("✅ Group Chat")
-            
-            if not in_channel:
-                status.append("❌ Channel")
-            else:
-                status.append("✅ Channel")
-            
-            message = f"""
-📝 **Status Registrasi**
-
-{' / '.join(status)}
-
-Untuk melengkapi registrasi:
-1️⃣ Join Group Chat: https://t.me/{GROUP_CHAT_ID}
-2️⃣ Join Channel: https://t.me/{CHANNEL_ID}
-
-Setelah join semua, klik tombol ini lagi.
-"""
-        
-        await query.edit_message_text(message, parse_mode=ParseMode.MARKDOWN)
-    
-    elif query.data == "lucky_wheel":
-        # Cek ticket dan membership
-        user_data = db.get_user(user_id)
-        if not user_data:
-            await query.edit_message_text("❌ Data tidak ditemukan. Ketik /start dulu.")
+    if q.data == "lucky":
+        # Check ticket
+        if not db.deduct_ticket(uid):
+            await q.edit_message_text("❌ Kamu tidak punya Lucky Ticket!")
             return
-        
-        in_group, in_channel = await check_user_membership(user_id, context.bot)
-        
-        if user_id != OWNER_ID and (not user_data[3] or not in_group or not in_channel):
-            await query.edit_message_text("❌ Selesaikan registrasi dulu di menu REGISTER!")
-            return
-        
-        # Cek tiket
-        if user_id != OWNER_ID:
-            has_ticket = db.deduct_ticket(user_id)
-            if not has_ticket:
-                await query.edit_message_text("❌ Kamu tidak memiliki Lucky Ticket!\n\nBelanja di shop atau ikuti event untuk mendapatkannya.")
-                return
-        
-        # Buka Mini App untuk Lucky Wheel
-        web_app_data = {
-            "user_id": user_id,
-            "username": user.username or user.first_name,
-            "is_owner": user_id == OWNER_ID
-        }
-        
-        # Buat URL Mini App
-        webapp_url = f"{WEB_SERVER_URL}/luckywheel.html"
-        
-        keyboard = [
+
+        url = f"{WEB_SERVER_URL}/luckywheel.html"
+
+        kb = [
             [InlineKeyboardButton(
                 "🎡 BUKA LUCKY WHEEL",
-                url=webapp_url,
-                web_app={"url": webapp_url, "data": web_app_data}
+                web_app=WebAppInfo(url=url)
             )]
         ]
-        
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        message = f"""
-🎡 **Lucky Wheel Roulette**
+        await q.edit_message_text(
+            "Klik tombol di bawah untuk spin!",
+            reply_markup=InlineKeyboardMarkup(kb)
+        )
 
-{'(🏆 OWNER MODE - Tiket Unlimited)' if user_id == OWNER_ID else ''}
+    elif q.data == "inv":
+        inv = db.inventory(uid)
+        msg = f"""
+🎒 **INVENTORY**
 
-🔄 **Hadiah yang tersedia:**
-💰 1x = 100 Fizz Coin
-💰 3x = 300 Fizz Coin  
-💰 5x = 500 Fizz Coin
-🎫 1x = 1 Lucky Ticket
-🎫 3x = 3 Lucky Ticket
-🎫 5x = 5 Lucky Ticket
-🧪 5x = 5 HP Potion
-☠️ = Zonk
-
-{'✅ Tiket sudah dikurangi' if user_id != OWNER_ID else '✅ Owner Mode Active'}
-
-Klik tombol di bawah untuk membuka Lucky Wheel!
+💰 Fizz Coin: {inv['fizz_coin']}
+🎫 Lucky Ticket: {inv['lucky_ticket']}
+🧪 HP Potion: {inv['hp_potion']}
 """
-        
-        await query.edit_message_text(message, parse_mode=ParseMode.MARKDOWN, reply_markup=reply_markup)
-    
-    elif query.data == "inventory":
-        # Ambil data inventory
-        inventory = db.get_user_inventory(user_id)
-        if not inventory:
-            await query.edit_message_text("❌ Inventory tidak ditemukan.")
-            return
-        
-        keyboard = [
-            [InlineKeyboardButton("🎒 LIHAT SEMUA ITEM", callback_data="view_inventory"),
-             InlineKeyboardButton("🧪 GUNAKAN HP POTION", callback_data="use_hp_potion")]
-        ]
-        
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        message = f"""
-🎒 **Inventory Menu**
+        await q.edit_message_text(msg, parse_mode=ParseMode.MARKDOWN)
 
-📊 **Ringkasan Inventory:**
-💰 Fizz Coin: {inventory['fizz_coin']:,}
-🎫 Lucky Ticket: {inventory['lucky_ticket']:,}
-🧪 HP Potion: {inventory['hp_potion']:,}
 
-{'(🏆 OWNER MODE - Tiket Unlimited)' if user_id == OWNER_ID else ''}
-"""
-        
-        await query.edit_message_text(message, parse_mode=ParseMode.MARKDOWN, reply_markup=reply_markup)
-    
-    elif query.data == "view_inventory":
-        # Tampilkan semua item detail
-        inventory = db.get_user_inventory(user_id)
-        if not inventory:
-            await query.edit_message_text("❌ Inventory kosong.")
-            return
-        
-        message = f"""
-🎒 **Detail Inventory**
-
-💰 **Fizz Coin:** {inventory['fizz_coin']:,}
-   → Bisa digunakan untuk belanja di shop
-
-🎫 **Lucky Ticket:** {inventory['lucky_ticket']:,}
-   → Untuk spin Lucky Wheel Roulette
-
-🧪 **HP Potion:** {inventory['hp_potion']:,}
-   → Untuk menambah HP karakter
-
-{'(🏆 OWNER MODE - Tiket Unlimited)' if user_id == OWNER_ID else ''}
-
- Semua hadiah yang didapat dari Lucky Wheel akan tersimpan di sini!
-"""
-        
-        await query.edit_message_text(message, parse_mode=ParseMode.MARKDOWN)
-    
-    elif query.data == "use_hp_potion":
-        inventory = db.get_user_inventory(user_id)
-        if not inventory or inventory['hp_potion'] <= 0:
-            await query.edit_message_text("❌ Kamu tidak memiliki HP Potion!")
-            return
-        
-        # Kurangi 1 HP potion dan berikan effect (untuk saat ini just info)
-        conn = sqlite3.connect(db.db_path)
-        cursor = conn.cursor()
-        cursor.execute('''
-            UPDATE users SET hp_potion = hp_potion - 1
-            WHERE user_id = ?
-        ''', (user_id,))
-        conn.commit()
-        conn.close()
-        
-        await query.edit_message_text("🧪 **HP Potion digunakan!**\n\nHP kamu sudah bertambah!\n(Untuk implementasi game RPG, fitur ini akan dikembangkan lebih lanjut)")
-    
-    elif query.data == "coming_soon":
-        await query.edit_message_text("⏳ **Fitur ini sedang dalam pengembangan!**\n\nNantikan update terbaru!")
-    
-    elif query.data == "spin_result":
-        # Handle hasil spin dari Mini App
-        try:
-            # Parse data dari callback
-            data = json.loads(query.data.replace("spin_result:", ""))
-            prize_type = data.get('prize_type')
-            prize_value = data.get('prize_value')
-            
-            # Tambah hadiah ke inventory
-            db.add_prize_to_user(user_id, prize_type, prize_value)
-            
-            # Ambil emoji dan nama hadiah
-            prizes = db.get_prizes()
-            prize_emoji = "❓"
-            prize_name = "Unknown"
-            
-            for prize in prizes:
-                if prize[1] == prize_value and prize[2].lower().replace(' ', '_').replace('.', '').replace('(', '').replace(')', '') == prize_type.replace('_', '_'):
-                    prize_emoji = prize[4]
-                    prize_name = prize[3]
-                    break
-            
-            if prize_type == "zonk":
-                message = f"""
-☠️ **HASIL SPIN: ZONK!**
-
-Sayang sekali, kamu tidak mendapat hadiah kali ini.
-
-Tapi jangan menyerah! Coba lagi untuk mendapatkan hadiah menarik!
-
-Ketik /menu untuk bermain lagi.
-"""
-            else:
-                # Konversi nama hadiah
-                type_names = {
-                    'fizz_coin': 'Fizz Coin',
-                    'lucky_ticket': 'Lucky Ticket',
-                    'hp_potion': 'HP Potion'
-                }
-                type_name = type_names.get(prize_type, prize_type)
-                
-                message = f"""
-🎉 **SELAMAT! KAMU MENDAPAT:**
-
-{prize_emoji} **{prize_value} {type_name}**
-
-Hadiah sudah masuk ke inventory kamu!
-
-Ketik /menu untuk bermain lagi atau cek inventory untuk melihat koleksi kamu.
-"""
-            
-            await query.edit_message_text(message, parse_mode=ParseMode.MARKDOWN)
-            
-        except Exception as e:
-            logger.error(f"Error processing spin result: {e}")
-            await query.edit_message_text("❌ Terjadi kesalahan saat memproses hasil spin.")
-
-# ======================================================
-# API UNTUK MINI APP – MENERIMA HASIL SPIN
-# ======================================================
-async def handle_lucky_wheel_result(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Menerima hasil spin dari Mini App via WebAppData."""
+# ============================
+# RECEIVER HASIL SPIN MINI APP
+# ============================
+async def lucky_wheel_receiver(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Menerima WebAppData dari Mini App."""
     try:
-        data = json.loads(update.message.text)
+        data = json.loads(update.message.web_app_data.data)
 
-        user_id = int(data["user_id"])
-        prize_type = data["prize_type"]
-        prize_value = int(data["prize_value"])
+        uid = int(data["user_id"])
+        ptype = data["prize_type"]
+        pvalue = int(data["prize_value"])
 
-        # Tambah hadiah ke user
-        db.add_prize_to_user(user_id, prize_type, prize_value)
+        # Simpan hadiah ke database
+        db.add_prize(uid, ptype, pvalue)
 
-        await update.message.reply_text("✅ Hadiah spin berhasil disimpan!")
+        # Kirim konfirmasi ke user
+        await update.message.reply_text(
+            f"🎉 Kamu mendapat **{pvalue} {ptype.replace('_', ' ').title()}**!"
+        )
 
-        logger.info(f"[LUCKY WHEEL] User {user_id} → {prize_value} {prize_type}")
+        # KIRIM ANNOUNCEMENT KE GROUP
+        await context.bot.send_message(
+            GROUP_CHAT_ID,
+            f"""
+🎉 **SPIN RESULT!**
+
+👤 Player ID: `{uid}`
+🎁 Hadiah: **{pvalue} {ptype.replace('_', ' ').title()}**
+""",
+            parse_mode=ParseMode.MARKDOWN
+        )
+
+        logger.info(f"[SPIN] UID {uid} mendapat {pvalue} {ptype}")
 
     except Exception as e:
-        logger.error(f"Error handling lucky wheel result: {e}")
+        logger.error(f"Spin receiver error: {e}")
         await update.message.reply_text("❌ Gagal memproses hasil spin.")
 
 
-# ======================================================
-# UPDATE WEB SERVER URL
-# ======================================================
-def update_web_server_url():
-    """Set URL Mini App GitHub Pages."""
-    global WEB_SERVER_URL
-    WEB_SERVER_URL = "https://axeliandrea.github.io/lootdungeon"
-    logger.info(f"Web Server URL updated to: {WEB_SERVER_URL}")
-
-
-# ======================================================
-# MAIN FUNCTION – FIXED
-# ======================================================
+# ============================
+# MAIN
+# ============================
 def main():
-    """Fungsi utama bot"""
+    app = Application.builder().token(BOT_TOKEN).build()
 
-    update_web_server_url()
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("menu", menu))
+    app.add_handler(CallbackQueryHandler(button_handler))
 
-    # Buat Application
-    application = Application.builder().token(BOT_TOKEN).build()
+    # WebAppData Handler
+    app.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, lucky_wheel_receiver))
 
-    # === Command Handlers ===
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(CommandHandler("menu", menu))
-
-    # === Callback Buttons ===
-    application.add_handler(CallbackQueryHandler(button_handler))
-
-    # === API receiver dari Mini App ===
-    # Mendeteksi JSON dari WebApp.sendData()
-    from telegram.ext import MessageHandler, filters
-    application.add_handler(
-        MessageHandler(filters.TEXT & ~filters.COMMAND, handle_lucky_wheel_result)
-    )
-
-    logger.info("Bot started...")
-    application.run_polling()
+    logger.info("BOT RUNNING...")
+    app.run_polling()
 
 
 if __name__ == "__main__":
