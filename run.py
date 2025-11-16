@@ -187,8 +187,10 @@ class LuckyWheelBot:
         print("=" * 50)
         print(f"🤖 Bot Token: 8533524958:AAEgMfl3NS9SzTMCOpy1YpJMGQfNzKcdvv8")
         print(f"👤 Owner ID: 6395738130")
-        print(f"🌐 Web Server: http://localhost:{port}")
-        print(f"🎡 Lucky Wheel: http://localhost:{port}/luckywheel.html")
+        web_base = f"http://localhost:{port}"
+        lucky_url = f"{web_base}/luckywheel.html"
+        print(f"🌐 Web Server: {web_base}")
+        print(f"🎡 Lucky Wheel: {lucky_url}")
         print("\n📱 Test di Telegram:")
         print("   1. Cari bot: @LuckyWheelRouletteBot")
         print("   2. Kirim: /start")
