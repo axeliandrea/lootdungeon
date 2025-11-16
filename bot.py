@@ -20,14 +20,11 @@ BOT_TOKEN = "8533524958:AAEgMfl3NS9SzTMCOpy1YpJMGQfNzKcdvv8"
 OWNER_ID = 6395738130
 GROUP_CHAT_ID = -1002917701297
 CHANNEL_ID = -1002502508906
-
-# URL MINI APP
 WEB_SERVER_URL = "https://axeliandrea.github.io/lootdungeon"
 
 # Logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)  # Set to DEBUG for detailed logs
 logger = logging.getLogger(__name__)
-
 
 # ============================
 # DATABASE
@@ -38,110 +35,152 @@ class DatabaseManager:
         self.init()
 
     def init(self):
-        conn = sqlite3.connect(self.db)
-        cur = conn.cursor()
-
-        # USER TABLE
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS users (
-                user_id INTEGER PRIMARY KEY,
-                username TEXT,
-                first_name TEXT,
-                registered BOOLEAN DEFAULT FALSE,
-                join_group BOOLEAN DEFAULT FALSE,
-                join_channel BOOLEAN DEFAULT FALSE,
-                fizz_coin INTEGER DEFAULT 0,
-                lucky_ticket INTEGER DEFAULT 3,
-                hp_potion INTEGER DEFAULT 0
-            )
-        """)
-
-        # SPIN HISTORY
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS spin_history (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER,
-                prize_type TEXT,
-                prize_value INTEGER,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-
-        conn.commit()
-        conn.close()
+        logger.debug("Initializing database...")
+        try:
+            conn = sqlite3.connect(self.db)
+            cur = conn.cursor()
+            # Create table for users
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS users (
+                    user_id INTEGER PRIMARY KEY,
+                    username TEXT,
+                    first_name TEXT,
+                    registered BOOLEAN DEFAULT FALSE,
+                    join_group BOOLEAN DEFAULT FALSE,
+                    join_channel BOOLEAN DEFAULT FALSE,
+                    fizz_coin INTEGER DEFAULT 0,
+                    lucky_ticket INTEGER DEFAULT 3,
+                    hp_potion INTEGER DEFAULT 0
+                )
+            """)
+            # Create table for spin history
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS spin_history (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER,
+                    prize_type TEXT,
+                    prize_value INTEGER,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            conn.commit()
+            logger.debug("Database initialized successfully.")
+        except Exception as e:
+            logger.error(f"DB init error: {e}")
+        finally:
+            conn.close()
 
     def get_user(self, uid):
-        conn = sqlite3.connect(self.db)
-        cur = conn.cursor()
-        cur.execute("SELECT * FROM users WHERE user_id = ?", (uid,))
-        u = cur.fetchone()
-        conn.close()
-        return u
+        logger.debug(f"Fetching user {uid}")
+        try:
+            conn = sqlite3.connect(self.db)
+            cur = conn.cursor()
+            cur.execute("SELECT * FROM users WHERE user_id = ?", (uid,))
+            u = cur.fetchone()
+            logger.debug(f"User fetched: {u}")
+            return u
+        except Exception as e:
+            logger.error(f"DB get_user error: {e}")
+        finally:
+            conn.close()
 
     def create_user(self, uid, uname, fname):
-        conn = sqlite3.connect(self.db)
-        cur = conn.cursor()
-        cur.execute("""
-            INSERT OR IGNORE INTO users (user_id, username, first_name)
-            VALUES (?, ?, ?)
-        """, (uid, uname, fname))
-        conn.commit()
-        conn.close()
+        logger.debug(f"Creating user {uid}, uname={uname}, fname={fname}")
+        try:
+            conn = sqlite3.connect(self.db)
+            cur = conn.cursor()
+            cur.execute("""
+                INSERT OR IGNORE INTO users (user_id, username, first_name)
+                VALUES (?, ?, ?)
+            """, (uid, uname, fname))
+            conn.commit()
+            logger.debug("User creation committed.")
+        except Exception as e:
+            logger.error(f"DB create_user error: {e}")
+        finally:
+            conn.close()
 
     def update(self, uid, **kwargs):
-        conn = sqlite3.connect(self.db)
-        cur = conn.cursor()
-        fields = []
-        vals = []
-        for k, v in kwargs.items():
-            fields.append(f"{k}=?")
-            vals.append(v)
-        vals.append(uid)
-        cur.execute(f"UPDATE users SET {','.join(fields)} WHERE user_id=?", vals)
-        conn.commit()
-        conn.close()
+        logger.debug(f"Updating user {uid} with {kwargs}")
+        try:
+            conn = sqlite3.connect(self.db)
+            cur = conn.cursor()
+            fields = []
+            vals = []
+            for k, v in kwargs.items():
+                fields.append(f"{k}=?")
+                vals.append(v)
+            vals.append(uid)
+            cur.execute(f"UPDATE users SET {','.join(fields)} WHERE user_id=?", vals)
+            conn.commit()
+            logger.debug("User update committed.")
+        except Exception as e:
+            logger.error(f"DB update error: {e}")
+        finally:
+            conn.close()
 
     def add_prize(self, uid, ptype, value):
-        conn = sqlite3.connect(self.db)
-        cur = conn.cursor()
+        logger.debug(f"Adding prize: uid={uid}, type={ptype}, value={value}")
+        try:
+            conn = sqlite3.connect(self.db)
+            cur = conn.cursor()
 
-        if ptype == "fizz_coin":
-            cur.execute("UPDATE users SET fizz_coin = fizz_coin + ? WHERE user_id = ?", (value, uid))
-        elif ptype == "lucky_ticket":
-            cur.execute("UPDATE users SET lucky_ticket = lucky_ticket + ? WHERE user_id = ?", (value, uid))
-        elif ptype == "hp_potion":
-            cur.execute("UPDATE users SET hp_potion = hp_potion + ? WHERE user_id = ?", (value, uid))
+            if ptype == "fizz_coin":
+                cur.execute("UPDATE users SET fizz_coin = fizz_coin + ? WHERE user_id = ?", (value, uid))
+            elif ptype == "lucky_ticket":
+                cur.execute("UPDATE users SET lucky_ticket = lucky_ticket + ? WHERE user_id = ?", (value, uid))
+            elif ptype == "hp_potion":
+                cur.execute("UPDATE users SET hp_potion = hp_potion + ? WHERE user_id = ?", (value, uid))
 
-        cur.execute("INSERT INTO spin_history (user_id, prize_type, prize_value) VALUES (?, ?, ?)",
-                    (uid, ptype, value))
+            cur.execute("INSERT INTO spin_history (user_id, prize_type, prize_value) VALUES (?, ?, ?)",
+                        (uid, ptype, value))
 
-        conn.commit()
-        conn.close()
+            conn.commit()
+            logger.debug("Prize added and committed.")
+        except Exception as e:
+            logger.error(f"DB add_prize error: {e}")
+        finally:
+            conn.close()
 
     def deduct_ticket(self, uid):
-        if uid == OWNER_ID:
-            return True
-        conn = sqlite3.connect(self.db)
-        cur = conn.cursor()
-        cur.execute("SELECT lucky_ticket FROM users WHERE user_id=?", (uid,))
-        t = cur.fetchone()
-        if t and t[0] > 0:
-            cur.execute("UPDATE users SET lucky_ticket = lucky_ticket - 1 WHERE user_id=?", (uid,))
-            conn.commit()
+        logger.debug(f"Deducting ticket for user {uid}")
+        try:
+            if uid == OWNER_ID:
+                logger.debug("Owner detected, skipping deduction.")
+                return True
+            conn = sqlite3.connect(self.db)
+            cur = conn.cursor()
+            cur.execute("SELECT lucky_ticket FROM users WHERE user_id=?", (uid,))
+            t = cur.fetchone()
+            if t and t[0] > 0:
+                cur.execute("UPDATE users SET lucky_ticket = lucky_ticket - 1 WHERE user_id=?", (uid,))
+                conn.commit()
+                logger.debug("Ticket deducted.")
+                return True
+            logger.debug("No ticket to deduct.")
+            return False
+        except Exception as e:
+            logger.error(f"DB deduct_ticket error: {e}")
+            return False
+        finally:
             conn.close()
-            return True
-        conn.close()
-        return False
 
     def inventory(self, uid):
-        conn = sqlite3.connect(self.db)
-        cur = conn.cursor()
-        cur.execute("SELECT fizz_coin, lucky_ticket, hp_potion FROM users WHERE user_id=?", (uid,))
-        r = cur.fetchone()
-        conn.close()
-        if r:
-            return {"fizz_coin": r[0], "lucky_ticket": r[1], "hp_potion": r[2]}
-        return None
+        logger.debug(f"Fetching inventory for user {uid}")
+        try:
+            conn = sqlite3.connect(self.db)
+            cur = conn.cursor()
+            cur.execute("SELECT fizz_coin, lucky_ticket, hp_potion FROM users WHERE user_id=?", (uid,))
+            r = cur.fetchone()
+            logger.debug(f"Inventory: {r}")
+            if r:
+                return {"fizz_coin": r[0], "lucky_ticket": r[1], "hp_potion": r[2]}
+            return None
+        except Exception as e:
+            logger.error(f"DB inventory error: {e}")
+            return None
+        finally:
+            conn.close()
 
 
 db = DatabaseManager()
@@ -151,25 +190,28 @@ db = DatabaseManager()
 # MEMBERSHIP CHECK
 # ============================
 async def check_membership(uid, bot):
+    logger.debug(f"Checking membership for user {uid}")
     try:
         g = await bot.get_chat_member(GROUP_CHAT_ID, uid)
         c = await bot.get_chat_member(CHANNEL_ID, uid)
-        return (
-            g.status in ["member", "administrator", "creator"],
-            c.status in ["member", "administrator", "creator"]
-        )
-    except:
+        g_status = g.status in ["member", "administrator", "creator"]
+        c_status = c.status in ["member", "administrator", "creator"]
+        logger.debug(f"Group: {g_status}, Channel: {c_status}")
+        return g_status, c_status
+    except Exception as e:
+        logger.error(f"Membership check error: {e}")
         return False, False
 
 
 # ============================
-# COMMAND: START
+# COMMANDS
 # ============================
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    u = update.effective_user
-    db.create_user(u.id, u.username, u.first_name)
-
-    msg = f"""
+    logger.debug(f"/start triggered by {update.effective_user.id}")
+    try:
+        u = update.effective_user
+        db.create_user(u.id, u.username, u.first_name)
+        msg = f"""
 🎮 **Lucky Wheel Bot aktif!**
 
 👋 Halo {u.first_name}!
@@ -180,44 +222,41 @@ Join dulu sebelum bermain:
 
 Kirim /menu untuk mulai bermain.
 """
-    await update.message.reply_text(msg, parse_mode=ParseMode.MARKDOWN)
+        await update.message.reply_text(msg, parse_mode=ParseMode.MARKDOWN)
+    except Exception as e:
+        logger.error(f"/start error: {e}")
 
 
-# ============================
-# COMMAND: MENU
-# ============================
 async def menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    u = update.effective_user
-    db.create_user(u.id, u.username, u.first_name)
+    logger.debug(f"/menu triggered by {update.effective_user.id}")
+    try:
+        u = update.effective_user
+        db.create_user(u.id, u.username, u.first_name)
+        ing, inch = await check_membership(u.id, context.bot)
+        db.update(u.id, join_group=ing, join_channel=inch, registered=ing and inch)
 
-    ing, inch = await check_membership(u.id, context.bot)
+        if not (ing and inch) and u.id != OWNER_ID:
+            await update.message.reply_text("⚠️ Kamu harus join group + channel dulu.")
+            return
 
-    db.update(u.id, join_group=ing, join_channel=inch, registered=ing and inch)
-
-    if not (ing and inch) and u.id != OWNER_ID:
-        await update.message.reply_text("⚠️ Kamu harus join group + channel dulu.")
-        return
-
-    inv = db.inventory(u.id)
-    text = f"""
+        inv = db.inventory(u.id)
+        text = f"""
 🎮 **GAME MENU**
 
 💰 Fizz Coin: {inv['fizz_coin']}
 🎫 Lucky Ticket: {inv['lucky_ticket']}
 🧪 HP Potion: {inv['hp_potion']}
 """
+        kb = [
+            [InlineKeyboardButton("🎡 Lucky Wheel", callback_data="lucky")],
+            [InlineKeyboardButton("🎒 Inventory", callback_data="inv")]
+        ]
+        await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN,
+                                        reply_markup=InlineKeyboardMarkup(kb))
+    except Exception as e:
+        logger.error(f"/menu error: {e}")
 
-    kb = [
-        [InlineKeyboardButton("🎡 Lucky Wheel", callback_data="lucky")],
-        [InlineKeyboardButton("🎒 Inventory", callback_data="inv")]
-    ]
-    await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN,
-                                    reply_markup=InlineKeyboardMarkup(kb))
 
-
-# ============================
-# CALLBACK BUTTONS
-# ============================
 async def button_handler(update: Update, context):
     q = update.callback_query
     await q.answer()
@@ -225,7 +264,6 @@ async def button_handler(update: Update, context):
     uid = q.from_user.id
 
     if q.data == "lucky":
-        # Check ticket
         if not db.deduct_ticket(uid):
             await q.edit_message_text("❌ Kamu tidak punya Lucky Ticket!")
             return
@@ -262,6 +300,7 @@ async def lucky_wheel_receiver(update: Update, context: ContextTypes.DEFAULT_TYP
     """Menerima WebAppData dari Mini App."""
     try:
         data = json.loads(update.message.web_app_data.data)
+        logger.debug(f"Received WebAppData: {data}")
 
         uid = int(data["user_id"])
         ptype = data["prize_type"]
@@ -275,7 +314,7 @@ async def lucky_wheel_receiver(update: Update, context: ContextTypes.DEFAULT_TYP
             f"🎉 Kamu mendapat **{pvalue} {ptype.replace('_', ' ').title()}**!"
         )
 
-        # KIRIM ANNOUNCEMENT KE GROUP
+        # Kirim pengumuman ke grup
         await context.bot.send_message(
             GROUP_CHAT_ID,
             f"""
