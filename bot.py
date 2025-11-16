@@ -21,7 +21,7 @@ GROUP_CHAT_ID = -1002917701297
 CHANNEL_ID = -1002502508906
 
 # URL untuk Mini App (akan diupdate setelah web server running)
-WEB_SERVER_URL = "https://lootdungeon.online"  # Akan diupdate otomatis
+WEB_SERVER_URL = "https://axeliandrea.github.io/lootdungeon"  # Akan diupdate otomatis
 
 # Konfigurasi logging
 logging.basicConfig(
@@ -631,7 +631,7 @@ def update_web_server_url():
         local_ip = s.getsockname()[0]
         s.close()
         
-        WEB_SERVER_URL = "https://lootdungeon.online"
+        WEB_SERVER_URL = "https://axeliandrea.github.io/lootdungeon"
         logger.info(f"Web Server URL updated to: {WEB_SERVER_URL}")
         
     except Exception as e:
