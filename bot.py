@@ -598,62 +598,68 @@ Ketik /menu untuk bermain lagi atau cek inventory untuk melihat koleksi kamu.
             logger.error(f"Error processing spin result: {e}")
             await query.edit_message_text("❌ Terjadi kesalahan saat memproses hasil spin.")
 
-# API untuk Mini App
+# ======================================================
+# API UNTUK MINI APP – MENERIMA HASIL SPIN
+# ======================================================
 async def handle_lucky_wheel_result(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle hasil spin dari Mini App"""
+    """Menerima hasil spin dari Mini App via WebAppData."""
     try:
         data = json.loads(update.message.text)
-        user_id = data.get('user_id')
-        prize_type = data.get('prize_type')
-        prize_value = data.get('prize_value')
-        
-        # Tambah hadiah ke inventory
+
+        user_id = int(data["user_id"])
+        prize_type = data["prize_type"]
+        prize_value = int(data["prize_value"])
+
+        # Tambah hadiah ke user
         db.add_prize_to_user(user_id, prize_type, prize_value)
-        
-        # Kirim konfirmasi
-        await update.message.reply_text("✅ Hasil spin berhasil disimpan!")
-        
+
+        await update.message.reply_text("✅ Hadiah spin berhasil disimpan!")
+
+        logger.info(f"[LUCKY WHEEL] User {user_id} → {prize_value} {prize_type}")
+
     except Exception as e:
         logger.error(f"Error handling lucky wheel result: {e}")
-        await update.message.reply_text("❌ Terjadi kesalahan saat menyimpan hasil spin.")
+        await update.message.reply_text("❌ Gagal memproses hasil spin.")
 
-# Fungsi untuk update Web Server URL
+
+# ======================================================
+# UPDATE WEB SERVER URL
+# ======================================================
 def update_web_server_url():
-    """Update URL web server untuk Mini App"""
+    """Set URL Mini App GitHub Pages."""
     global WEB_SERVER_URL
-    try:
-        import requests
-        import socket
-        
-        # Dapatkan IP lokal
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("8.8.8.8", 80))
-        local_ip = s.getsockname()[0]
-        s.close()
-        
-        WEB_SERVER_URL = "https://axeliandrea.github.io/lootdungeon"
-        logger.info(f"Web Server URL updated to: {WEB_SERVER_URL}")
-        
-    except Exception as e:
-        logger.error(f"Error updating web server URL: {e}")
+    WEB_SERVER_URL = "https://axeliandrea.github.io/lootdungeon"
+    logger.info(f"Web Server URL updated to: {WEB_SERVER_URL}")
 
-# Main function
+
+# ======================================================
+# MAIN FUNCTION – FIXED
+# ======================================================
 def main():
-    """Fungsi utama untuk menjalankan bot"""
-    # Update web server URL
+    """Fungsi utama bot"""
+
     update_web_server_url()
-    
-    # Buat application
+
+    # Buat Application
     application = Application.builder().token(BOT_TOKEN).build()
-    
-    # Tambahkan handlers
+
+    # === Command Handlers ===
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("menu", menu))
+
+    # === Callback Buttons ===
     application.add_handler(CallbackQueryHandler(button_handler))
-    
-    # Start bot
+
+    # === API receiver dari Mini App ===
+    # Mendeteksi JSON dari WebApp.sendData()
+    from telegram.ext import MessageHandler, filters
+    application.add_handler(
+        MessageHandler(filters.TEXT & ~filters.COMMAND, handle_lucky_wheel_result)
+    )
+
     logger.info("Bot started...")
     application.run_polling()
+
 
 if __name__ == "__main__":
     main()
